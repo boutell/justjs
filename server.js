@@ -15,7 +15,6 @@ var fs = require('fs');
 var mongo = require('mongodb');
 var app = require('express').createServer();
 
-options.templates.index = _.template(fs.readFileSync(__dirname + '/templates/index._', 'utf8'));
 options.templates.post = _.template(fs.readFileSync(__dirname + '/templates/post._', 'utf8'));
 options.templates.postBody = _.template(fs.readFileSync(__dirname + '/templates/postBody._', 'utf8'));
 options.templates.layout = _.template(fs.readFileSync(__dirname + '/templates/layout._', 'utf8'));
@@ -29,9 +28,7 @@ app.get('/', function(req, res) {
     {
       throw err;
     }
-    var slots = {};
-    slots.body = options.templates.index({ posts: posts, options: options, slots: slots });
-    res.send(options.templates.layout({ slots: slots }));
+    sendPage(res, 'index', { posts: posts });
   });
 });
 
@@ -44,9 +41,7 @@ app.get('/posts/:slug', function(req, res) {
     }
     if (post)
     {
-      var slots = {};
-      slots.body = options.templates.post({ post: post, options: options, slots: slots });
-      res.send(options.templates.layout({ slots: slots }));
+      sendPage(res, 'post', { post: post });
     }
     else
     {
@@ -55,6 +50,29 @@ app.get('/posts/:slug', function(req, res) {
     }
   });
 });
+
+// Render a page template nested in the layout, allowing slots 
+// (such as overrides of the page title) to be passed back to the layout 
+function sendPage(res, template, data)
+{
+  var slots = {};
+  _.defaults(data, { slots: slots });
+  slots.body = renderPartial(template, data);
+  res.send(renderPartial('layout', { slots: slots }));
+}
+
+function renderPartial(template, data)
+{
+  if (_.isUndefined(options.templates[template]))
+  {
+    options.templates[template] = _.template(fs.readFileSync(__dirname + '/templates/' + template + '._', 'utf8'));
+  }
+  _.defaults(data, { options: options, slots: {}, renderPartial: function(partial, data) {
+    _.defaults(data, { slots: slots });
+    renderPartial(partial, data);
+  }});
+  return options.templates[template](data);
+}
 
 db = new mongo.Db(options.db.name, new mongo.Server(options.db.host, options.db.port, {}), {});
 db.open(function(err, client) {
