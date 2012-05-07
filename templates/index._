@@ -1,0 +1,11 @@
+<html>
+<head>
+<title>justjs</title>
+</head>
+<body>
+<h1>justjs</h1>
+<ul class="posts">
+<% _.each(posts, function(post) { print(options.templates.post(post)); }); %>
+</ul>
+</body>
+</html>
