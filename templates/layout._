@@ -1,10 +1,18 @@
-<% _.defaults(slots, { title: '', bodyClass: '' }) %>
+<% _.defaults(slots, { title: '', bodyClass: '', crumbs: [] }) %>
+<% slots.crumbs.unshift({'title': 'Home', 'href': '/'}) %>
 <html>
 <head>
 <title>justjs<%- slots.title %></title>
 </head>
 <body class="justjs <%= slots.bodyClass %>">
 <h1>justjs<%- slots.title %></h1>
-<%= slots.body %>
+<ul class="crumbs">
+	<% _.each(slots.crumbs, function(crumb) { %> 
+		<li><a href="<%- crumb.href %>"><%- crumb.title %></a></li> 
+	<% }) %>
+</ul>
+<div class="body">
+  <%= slots.body %>
+</div>
 </body>
 </html>
