@@ -1,0 +1,10 @@
+<% _.defaults(slots, { title: '', bodyClass: '' }) %>
+<html>
+<head>
+<title>justjs<%- slots.title %></title>
+</head>
+<body class="justjs <%= slots.bodyClass %>">
+<h1>justjs<%- slots.title %></h1>
+<%= slots.body %>
+</body>
+</html>

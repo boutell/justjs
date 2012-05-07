@@ -1,4 +1,2 @@
-<h2><%- title %></h2>
-<div class="postBody">
-<%- body %>
-</div>
+<% slots.title = ': ' + post.title %>
+<% print(options.templates.postBody(post)) %>
