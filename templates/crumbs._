@@ -1,0 +1,5 @@
+<ul class="crumbs">
+	<% _.each(slots.crumbs, function(crumb) { %> 
+		<li><a href="<%- crumb.href %>"><%- crumb.title %></a></li> 
+	<% }) %>
+</ul>

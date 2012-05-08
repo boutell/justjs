@@ -6,11 +6,7 @@
 </head>
 <body class="justjs <%= slots.bodyClass %>">
 <h1>justjs<%- slots.title %></h1>
-<ul class="crumbs">
-	<% _.each(slots.crumbs, function(crumb) { %> 
-		<li><a href="<%- crumb.href %>"><%- crumb.title %></a></li> 
-	<% }) %>
-</ul>
+<%= partial('crumbs', {}) %>
 <div class="body">
   <%= slots.body %>
 </div>

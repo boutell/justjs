@@ -22,6 +22,70 @@ options.templates.layout = _.template(fs.readFileSync(__dirname + '/templates/la
 var db;
 var postCollection;
 
+sequence([connect, listen], ready);
+
+// Accepts an array of functions that expect a callback function and calls them asynchronously
+// in sequence. This is useful for app initialization and other truly serial tasks.
+//
+// As each one completes the next is invoked if no error has so far occurred. When the entire 
+// sequence completes 'callback' is invoked; if an error is passed to 'callback', one of the 
+// operations failed.
+
+function sequence(operations, callback)
+{
+  if (operations.length)
+  {
+    operations[0](null, function(err) {
+      if (err)
+      {
+        callback(err);
+        return;
+      }
+      sequence(operations.slice(1), callback);
+    });
+  }
+  else
+  {
+    callback(null);
+  }
+}
+
+function connect(err, callback)
+{
+  db = new mongo.Db(options.db.name, new mongo.Server(options.db.host, options.db.port, {}), {});
+  db.open(function(err, client) {
+    postCollection = db.collection('post');
+    postCollection.ensureIndex("slug", { unique: true }, function(err, indexName) 
+    {
+      console.log('Database initialized');
+      callback(err);
+    });
+  });
+}
+
+function listen(err, callback)
+{
+  if (!err)
+  {
+    app.listen(options.http.port);  
+    console.log("Listening on port " + options.http.port);
+  }
+  callback(err);
+};
+
+function ready(err)
+{
+  if (err)
+  {
+    console.log("Uh-oh");
+    console.log(err);
+  }
+  else
+  {
+    console.log("Ready");
+  }
+}
+
 app.get('/', function(req, res) {
   postCollection.find().sort({created: -1}).toArray(function(err, posts) {
     if (err)
@@ -67,28 +131,9 @@ function renderPartial(template, data)
   {
     options.templates[template] = _.template(fs.readFileSync(__dirname + '/templates/' + template + '._', 'utf8'));
   }
-  _.defaults(data, { options: options, slots: {}, renderPartial: function(partial, data) {
-    _.defaults(data, { slots: slots });
-    renderPartial(partial, data);
+  _.defaults(data, { options: options, slots: {}, partial: function(partial, partialData) {
+    _.defaults(partialData, { slots: data.slots });
+    return renderPartial(partial, partialData);
   }});
   return options.templates[template](data);
 }
-
-db = new mongo.Db(options.db.name, new mongo.Server(options.db.host, options.db.port, {}), {});
-db.open(function(err, client) {
-  postCollection = db.collection('post');
-  postCollection.ensureIndex("slug", { unique: true }, function(err, callback) 
-  {
-    if (err)
-    {
-      throw err;
-    }
-    ready();
-  });
-});
-
-function ready()
-{
-  app.listen(options.http.port);  
-  console.log("Listening on port " + options.http.port);
-};
