@@ -25,32 +25,6 @@ var postCollection;
 
 async.series([connect, listen], ready);
 
-// Accepts an array of functions that expect a callback function and calls them asynchronously
-// in sequence. This is useful for app initialization and other truly serial tasks.
-//
-// As each one completes the next is invoked if no error has so far occurred. When the entire 
-// sequence completes 'callback' is invoked; if an error is passed to 'callback', one of the 
-// operations failed.
-
-function sequence(operations, callback)
-{
-  if (operations.length)
-  {
-    operations[0](null, function(err) {
-      if (err)
-      {
-        callback(err);
-        return;
-      }
-      sequence(operations.slice(1), callback);
-    });
-  }
-  else
-  {
-    callback(null);
-  }
-}
-
 function connect(callback)
 {
   db = new mongo.Db(options.db.name, new mongo.Server(options.db.host, options.db.port, {}), {});
