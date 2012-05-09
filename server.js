@@ -14,6 +14,7 @@ var _ = require('underscore');
 var fs = require('fs');
 var mongo = require('mongodb');
 var app = require('express').createServer();
+var async = require('async');
 
 options.templates.post = _.template(fs.readFileSync(__dirname + '/templates/post._', 'utf8'));
 options.templates.postBody = _.template(fs.readFileSync(__dirname + '/templates/postBody._', 'utf8'));
@@ -22,7 +23,7 @@ options.templates.layout = _.template(fs.readFileSync(__dirname + '/templates/la
 var db;
 var postCollection;
 
-sequence([connect, listen], ready);
+async.series([connect, listen], ready);
 
 // Accepts an array of functions that expect a callback function and calls them asynchronously
 // in sequence. This is useful for app initialization and other truly serial tasks.
@@ -50,7 +51,7 @@ function sequence(operations, callback)
   }
 }
 
-function connect(err, callback)
+function connect(callback)
 {
   db = new mongo.Db(options.db.name, new mongo.Server(options.db.host, options.db.port, {}), {});
   db.open(function(err, client) {
@@ -63,21 +64,18 @@ function connect(err, callback)
   });
 }
 
-function listen(err, callback)
+function listen(callback)
 {
-  if (!err)
-  {
-    app.listen(options.http.port);  
-    console.log("Listening on port " + options.http.port);
-  }
-  callback(err);
+  app.listen(options.http.port);  
+  console.log("Listening on port " + options.http.port);
+  callback(null);
 };
 
-function ready(err)
+function ready(err, results)
 {
   if (err)
   {
-    console.log("Uh-oh");
+    console.log("Uh-oh:");
     console.log(err);
   }
   else
