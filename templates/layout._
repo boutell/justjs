@@ -5,6 +5,11 @@
 <title>justjs<%- slots.title %></title>
 </head>
 <body class="justjs <%= slots.bodyClass %>">
+<% if (slots.user) { %>
+	<h4><%- slots.user.username %> <a href="/logout">Log Out</a></h4>
+<% } else { %>
+	<h4><a href="/auth/twitter">Sign in with Twitter</a></h4>
+<% } %>
 <h1>justjs<%- slots.title %></h1>
 <h4><a href="/new">New Post</a></h4>
 <%= partial('crumbs', {}) %>

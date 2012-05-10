@@ -1,3 +1,5 @@
+var _ = require('underscore');
+
 var options = { 
   db: {
     host: '127.0.0.1',
@@ -7,20 +9,33 @@ var options = {
   http: {
     port: 3000
   },
-  templates: {}
+  templates: {},
+  // In production you should override this in config-local.js
+  sessionSecret: 'CHANGEME'
 };
 
-var _ = require('underscore');
+// Let settings specific to this server override global settings
+// Use a local relative path (./) to require a file here in this project
+// rather than one in NPM
+_.extend(options, require('./config-local.js'));
+
 var fs = require('fs');
 var mongo = require('mongodb');
 var async = require('async');
 var express = require('express');
+var passport = require('passport');
 var app = express.createServer();
 
 // Use the body parser express middleware to automatically parse
 // POST form submissions
 app.use(express.bodyParser());
+// Make cookies available for sessions, which Passport requires to give us logins
+app.use(express.cookieParser());
+app.use(express.session({ secret: options.sessionSecret }));
+// Now we can configure passport
+configurePassport();
 
+// Underscore templates to render various pages
 options.templates.post = _.template(fs.readFileSync(__dirname + '/templates/post._', 'utf8'));
 options.templates.postBody = _.template(fs.readFileSync(__dirname + '/templates/postBody._', 'utf8'));
 options.templates.layout = _.template(fs.readFileSync(__dirname + '/templates/layout._', 'utf8'));
@@ -71,7 +86,7 @@ app.get('/', function(req, res) {
     {
       throw err;
     }
-    sendPage(res, 'index', { posts: posts });
+    sendPage(req, res, 'index', { posts: posts });
   });
 });
 
@@ -84,7 +99,7 @@ app.get('/posts/:slug', function(req, res) {
     }
     if (post)
     {
-      sendPage(res, 'post', { post: post });
+      sendPage(req, res, 'post', { post: post });
     }
     else
     {
@@ -95,7 +110,7 @@ app.get('/posts/:slug', function(req, res) {
 });
 
 app.get('/new', function(req, res) {
-  sendPage(res, 'new', {});
+  sendPage(req, res, 'new', {});
 });
 
 app.post('/create', function(req, res) {
@@ -113,9 +128,10 @@ app.post('/create', function(req, res) {
 
 // Render a page template nested in the layout, allowing slots 
 // (such as overrides of the page title) to be passed back to the layout 
-function sendPage(res, template, data)
+function sendPage(req, res, template, data)
 {
-  var slots = {};
+  // It's useful to be able to access the user's name
+  var slots = { 'user': req.user };
   _.defaults(data, { slots: slots });
   slots.body = renderPartial(template, data);
   res.send(renderPartial('layout', { slots: slots }));
@@ -194,4 +210,68 @@ function insertUniquely(doc, options, callback)
       }
     });
   }
+}
+
+function configurePassport()
+{
+  var TwitterStrategy = require('passport-twitter').Strategy;
+  passport.use(new TwitterStrategy(
+    options.twitter,
+    function(token, tokenSecret, profile, done) {
+      // We now have a unique id, username and full name (display name) for the user 
+      // courtesy of Twitter. I call the display name 'fullName' for consistency with
+      // other situations in which I use a local database of users
+      var user = { 'id': profile.id, 'username': profile.username, 'fullName': profile.displayName };
+      done(null, user);
+    }
+  ));
+
+  // It's up to us to tell Passport how to store the current user in the session, and how to take
+  // session data and get back a user object. We could store just an id in the session and go back
+  // and forth to the complete user object via MySQL or MongoDB lookups, but since the user object
+  // is small and changes rarely, we'll save a round trip to the database by storign the user
+  // information directly in the session in JSON string format.
+
+  passport.serializeUser(function(user, done) {
+    done(null, JSON.stringify(user));
+  });
+
+  passport.deserializeUser(function(json, done) {
+    var user = JSON.parse(json);
+    if (user)
+    {
+      done(null, user);
+    }
+    else
+    {
+      done(new Error("Bad JSON string in session"), null);
+    }
+  });
+
+  // We must install passport's middleware before we can set routes that depend on it
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+  // Borrowed from http://passportjs.org/guide/twitter.html
+
+  // Redirect the user to Twitter for authentication.  When complete, Twitter
+  // will redirect the user back to the application at
+  // /auth/twitter/callback
+  app.get('/auth/twitter', passport.authenticate('twitter'));
+
+  // Twitter will redirect the user to this URL after approval.  Finish the
+  // authentication process by attempting to obtain an access token.  If
+  // access was granted, the user will be logged in.  Otherwise,
+  // authentication has failed.
+  app.get('/auth/twitter/callback', 
+    passport.authenticate('twitter', { successRedirect: '/',
+                                       failureRedirect: '/login' }));
+
+  app.get('/logout', function(req, res)
+  {
+    req.logOut();
+    res.redirect('/');
+  });
+
+  console.log("Installed passport.initialize");
 }
