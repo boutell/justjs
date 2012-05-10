@@ -1,0 +1,24 @@
+{
+  "author": "Thomas Boutell <boutell@boutell.com> (http://www.boutell.com/)",
+  "name": "justjs",
+  "description": "A node.js based blog, intended as a living example of node app development",
+  "version": "0.0.1",
+  "homepage": "http://justjs.com/",
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/boutell/justjs.git"
+  },
+  "dependencies": {
+    "async": "~0.1.18",
+    "underscore": "~1.3.3",
+    "passport": "~0.1.8",
+    "passport-twitter": "~0.1.3",
+    "express": "~2.5.9",
+    "mongodb": "~1.0.0"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
