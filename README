@@ -1,3 +1,11 @@
 = justjs =
 
 justjs is an autobiographical, open-source blog about node.js development. I'll be using it to blog about it, just as soon as there is enough functionality in place.
+
+To get it running you'll need to install node and mongodb and do 'npm install', then:
+
+node server.js
+
+You can override anything in 'options' in 'config-local.js' (see config-local-example.js).
+
+This is a work in progress. As of this writing it is not a production-ready blog. See the commit log for current status.
