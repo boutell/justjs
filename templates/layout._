@@ -6,6 +6,7 @@
 </head>
 <body class="justjs <%= slots.bodyClass %>">
 <h1>justjs<%- slots.title %></h1>
+<h4><a href="/new">New Post</a></h4>
 <%= partial('crumbs', {}) %>
 <div class="body">
   <%= slots.body %>

@@ -1,0 +1,14 @@
+<form method="POST" action="/create">
+<fieldset>
+<label>Title</label>
+<input name="title" />
+</fieldset>
+<fieldset>
+<label>Body</label>
+<textarea name="body">
+</textarea>
+</fieldset>
+<fieldset>
+<input type="submit" value="Save" />
+</fieldset>
+</form>
