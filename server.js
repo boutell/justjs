@@ -86,7 +86,8 @@ app.get('/', function(req, res) {
     {
       throw err;
     }
-    sendPage(req, res, 'index', { posts: posts });
+    // Use permissions to determine whether to show the 'post' button
+    sendPage(req, res, 'index', { posts: posts, 'permissions': getPermissions(req) });
   });
 });
 
@@ -114,10 +115,18 @@ app.get('/new', function(req, res) {
 });
 
 app.post('/create', function(req, res) {
+  permissions = getPermissions(req);
+  if (!permissions.post)
+  {
+    res.status(403);
+    res.send('You do not have posting privileges');
+    return;
+  }
   var post = _.pick(
     _.defaults(req.body, {'title': '', 'body': ''}), 
     'title', 'body');
   post.slug = slugify(post.title);
+  post.created = new Date();
   // If there are unique index errors keep adding random digits via
   // uniqueify until we have a unique slug. On success redirect to the
   // index page, where we can see the new post at the top
@@ -148,6 +157,19 @@ function renderPartial(template, data)
     return renderPartial(partial, partialData);
   }});
   return options.templates[template](data);
+}
+
+// Is the user associated with the current request allowed to carry out
+// the specified action? Creating a separate function for this allows us
+// to easily swap it out for a more sophisticated check of privileges
+// associated with the user in a database at any time. For now just check
+// the admin user name in options
+
+function getPermissions(req)
+{
+  return {
+    post: (req.user && (req.user.username === options.admin))
+  }
 }
 
 // Create a reasonable slug for use in URLs based on the supplied string
@@ -272,6 +294,5 @@ function configurePassport()
     req.logOut();
     res.redirect('/');
   });
-
   console.log("Installed passport.initialize");
 }

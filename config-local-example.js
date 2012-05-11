@@ -18,5 +18,8 @@ module.exports = {
   }
   // Should be unique to your site. Used to hash session identifiers
   // so they can't be easily hijacked
-  sessionSecret: 'CHANGEME'
+  sessionSecret: 'CHANGEME',
+
+  // Replace with YOUR twitter username
+  admin: 'boutell'
 };
