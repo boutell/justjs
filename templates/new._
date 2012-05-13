@@ -1,15 +1,16 @@
 <% _.defaults(slots, { crumbs: [] }) %>
+<% slots.richTextEditor = true %>
 <% slots.crumbs.unshift({'title': 'New', 'href': '/new'}) %>
 <div class="row">
 	<div class="span9">
 		<form class="well" method="POST" action="/create">
 			<fieldset>
 				<label>Title</label>
-				<input name="title" />
+				<input name="title" class="post-title" />
 			</fieldset>
 			<fieldset>
 				<label>Body</label>
-				<textarea name="body" class="post-body">
+				<textarea name="body" class="post-body rich-text-editor">
 				</textarea>
 			</fieldset>
 			<fieldset>

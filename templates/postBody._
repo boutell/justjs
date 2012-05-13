@@ -1,4 +1,4 @@
 <h2><a href="/posts/<%- slug %>"><%- title %></a></h2>
 <div class="postBody">
-<%- body %>
+<%= body %>
 </div>

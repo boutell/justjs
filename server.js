@@ -25,6 +25,7 @@ var async = require('async');
 var express = require('express');
 var passport = require('passport');
 var app = express.createServer();
+var sanitize = require('validator').sanitize;
 
 // Use the body parser express middleware to automatically parse
 // POST form submissions
@@ -129,9 +130,15 @@ app.post('/create', function(req, res) {
     _.defaults(req.body, {'title': '', 'body': ''}), 
     'title', 'body');
   post.slug = slugify(post.title);
+ 
+  // We allow HTML in the body (via the rich text editor), but we don't want 
+  // XSS attacks (user-submitted scripts in the body)
+  post.body = sanitize(post.body).xss();
+ 
   post.created = new Date();
+ 
   // If there are unique index errors keep adding random digits via
-  // uniqueify until we have a unique slug. On success redirect to the
+  // insertUniquely until we have a unique slug. On success redirect to the
   // index page, where we can see the new post at the top
   postCollection.insertUniquely(post, {}, function(err, docs) {
     res.redirect('/');

@@ -1,4 +1,4 @@
 <% _.defaults(slots, { crumbs: [] }) %>
 <% slots.crumbs.unshift({'title': post.title, 'href': '/posts/' + post.slug}) %>
 <% slots.title = ': ' + post.title %>
-<% print(options.templates.postBody(post)) %>
+<%= partial('postBody', post) %>

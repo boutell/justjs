@@ -8,4 +8,6 @@ node server.js
 
 You can override anything in 'options' in 'config-local.js' (see config-local-example.js).
 
-This is a work in progress. As of this writing it is not a production-ready blog. See the commit log for current status.
+This is a work in progress. As of this writing it is not a production-ready blog (though it's getting quite close). See the commit log for current status.
+
+Released under the MIT license.
