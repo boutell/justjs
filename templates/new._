@@ -1,14 +1,20 @@
-<form method="POST" action="/create">
-<fieldset>
-<label>Title</label>
-<input name="title" />
-</fieldset>
-<fieldset>
-<label>Body</label>
-<textarea name="body">
-</textarea>
-</fieldset>
-<fieldset>
-<input type="submit" value="Save" />
-</fieldset>
-</form>
+<% _.defaults(slots, { crumbs: [] }) %>
+<% slots.crumbs.unshift({'title': 'New', 'href': '/new'}) %>
+<div class="row">
+	<div class="span9">
+		<form class="well" method="POST" action="/create">
+			<fieldset>
+				<label>Title</label>
+				<input name="title" />
+			</fieldset>
+			<fieldset>
+				<label>Body</label>
+				<textarea name="body" class="post-body">
+				</textarea>
+			</fieldset>
+			<fieldset>
+				<input class="btn btn-primary btn-large" type="submit" value="Save" />
+			</fieldset>
+		</form>
+	</div>
+</div>

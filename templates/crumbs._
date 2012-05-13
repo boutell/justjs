@@ -1,5 +1,14 @@
-<ul class="crumbs">
-	<% _.each(slots.crumbs, function(crumb) { %> 
-		<li><a href="<%- crumb.href %>"><%- crumb.title %></a></li> 
-	<% }) %>
-</ul>
+<div class="row">
+	<div class="span6">
+		<ul class="breadcrumb">
+			<% for (var i = 0; (i < slots.crumbs.length); i++) { %>
+				<% var last = (i + 1) === slots.crumbs.length %>
+				<% var crumb = slots.crumbs[i] %>
+				<li class="<%= last ? 'active' : '' %>">
+				  <a href="<%- crumb.href %>"><%- crumb.title %></a> 
+				    <%= last ? '' : '<span class="divider">&raquo;</span>'%>
+				</li>
+			<% } %>
+		</ul>
+	</div>
+</div>

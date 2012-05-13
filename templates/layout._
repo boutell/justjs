@@ -1,19 +1,49 @@
+<!DOCTYPE html>
 <% _.defaults(slots, { title: '', bodyClass: '', crumbs: [] }) %>
 <% slots.crumbs.unshift({'title': 'Home', 'href': '/'}) %>
-<html>
+<html lang="en">
 <head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>justjs<%- slots.title %></title>
+<link href="/static/css/justjs.css" rel="stylesheet" />
+<link href="/static/bootstrap/css/bootstrap.css" rel="stylesheet" />
+<link href="/static/bootstrap/css/bootstrap-responsive.css" rel="stylesheet" />
 </head>
 <body class="justjs <%= slots.bodyClass %>">
-<% if (slots.user) { %>
-	<h4><%- slots.user.username %> <a href="/logout">Log Out</a></h4>
-<% } else { %>
-	<h4><a href="/auth/twitter">Sign in with Twitter</a></h4>
-<% } %>
-<h1>justjs<%- slots.title %></h1>
-<%= partial('crumbs', {}) %>
-<div class="body">
-  <%= slots.body %>
-</div>
+    <div class="navbar navbar-fixed-top">
+		<div class="navbar-inner">
+			<div class="container">
+				<% // If we needed navbar buttons, they'd go here! %>
+				<% if (false) { %>
+					<a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+					</a>
+				<% } %>
+				<a class="brand" href="#">justjs</a>
+				<% // If we needed tabs, they'd go here! %>
+				<% if (false) { %>
+					<div class="nav-collapse">
+					<ul class="nav">
+					<li class="active"><a href="#">Home</a></li>
+					<li><a href="#about">About</a></li>
+					<li><a href="#contact">Contact</a></li>
+					</ul>
+					</div><!--/.nav-collapse -->
+			    <% } %>
+			    <%= partial('login', {}) %>
+			</div>
+		</div>
+    </div>
+
+	<div class="container">
+		<%= partial('crumbs', {}) %>
+		<div class="row">
+			<div class="span12">
+				<%= slots.body %>
+			</div>
+		</div>
+	</div>
 </body>
 </html>

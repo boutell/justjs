@@ -1,5 +1,7 @@
 <% if (permissions.post) { %>
-	<h4><a href="/new">New Post</a></h4>
+	<div class="btn-group">
+		<a class="btn btn-primary btn-large" href="/new">New Post</a>
+	</div>
 <% } %>
 
 <ul class="posts">

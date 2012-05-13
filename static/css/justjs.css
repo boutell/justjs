@@ -1,0 +1,18 @@
+body 
+{
+	/* Without this (borrowed from one of the bootstrap samples) the bootstrap navbar
+	  clobbers the top of the content. */
+	padding-top: 60px;
+}
+
+/* Reasonable styles for the "new post" form */
+.post-title
+{
+	width: 100%;
+}
+
+.post-body
+{
+	width: 100%;
+	height: 200px;
+}

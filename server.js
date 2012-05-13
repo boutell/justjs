@@ -35,6 +35,9 @@ app.use(express.session({ secret: options.sessionSecret }));
 // Now we can configure passport
 configurePassport();
 
+// Serve static files (such as CSS and js) in this folder
+app.use('/static', express.static(__dirname + '/static'));
+
 // Underscore templates to render various pages
 options.templates.post = _.template(fs.readFileSync(__dirname + '/templates/post._', 'utf8'));
 options.templates.postBody = _.template(fs.readFileSync(__dirname + '/templates/postBody._', 'utf8'));
