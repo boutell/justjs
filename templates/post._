@@ -2,3 +2,9 @@
 <% slots.crumbs.unshift({'title': post.title, 'href': '/posts/' + post.slug}) %>
 <% slots.title = ': ' + post.title %>
 <%= partial('postBody', post) %>
+<% if (permissions.post) { %>
+	<div class="btn-group">
+		<a class="btn" href="/posts/<%= post.slug %>/edit"><i class="icon-edit"></i></a>
+		<a class="btn confirm" data-confirm="Are you sure you want to delete this post?" href="/posts/<%= post.slug %>/delete"><i class="icon-trash"></i></a>
+	</div>
+<% } %>

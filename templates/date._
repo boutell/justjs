@@ -1,0 +1,1 @@
+<%= date.getMonth() + 1 %>/<%= date.getDate() %> '<%= (date.getYear() % 100).toString() %>

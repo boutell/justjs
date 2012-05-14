@@ -114,6 +114,80 @@ app.get('/posts/:slug', function(req, res) {
   });
 });
 
+app.get('/posts/:slug/edit', function(req, res) {
+  var slug = req.params.slug;
+  postCollection.findOne({slug: slug}, function(err, post) { 
+    if (err)
+    {
+      throw err;
+    }
+    if (post)
+    {
+      sendPage(req, res, 'edit', { post: post });
+    }
+    else
+    {
+      res.status(404);
+      res.send('Post Not Found');
+    }
+  });
+});
+
+app.post('/posts/:slug/edit', function(req, res) {
+  permissions = getPermissions(req);
+  if (!permissions.post)
+  {
+    res.status(403);
+    res.send('You do not have posting privileges');
+    return;
+  }
+  var slug = req.params.slug;
+  postCollection.findOne({slug: slug}, function(err, post) { 
+    if (err)
+    {
+      throw err;
+    }
+    if (post)
+    {
+      post.title = req.body.title;
+      post.body = sanitize(req.body.body).xss();
+
+      postCollection.update({slug: slug}, post, {safe: true}, function(err, docs) {
+        res.redirect('/');
+      });
+    }
+    else
+    {
+      res.status(404);
+      res.send('Post Not Found');
+    }
+  });
+});
+
+// TODO: using the GET method for verbs is really pretty terrible
+app.get('/posts/:slug/delete', function(req, res) {
+  permissions = getPermissions(req);
+  if (!permissions.post)
+  {
+    res.status(403);
+    res.send('You do not have posting privileges');
+    return;
+  }
+  var slug = req.params.slug;
+  postCollection.remove({slug: slug}, {safe: true}, function(err, count) { 
+    if (err)
+    {
+      throw err;
+    }
+    if (!count)
+    {
+      res.redirect(404);
+      res.send("Post Not Found");
+    }
+    res.redirect('/');
+  });
+});
+
 app.get('/new', function(req, res) {
   sendPage(req, res, 'new', {});
 });
@@ -152,20 +226,42 @@ function sendPage(req, res, template, data)
   // It's useful to be able to access the user's name
   var slots = { 'user': req.user };
   _.defaults(data, { slots: slots });
-  slots.body = renderPartial(template, data);
-  res.send(renderPartial('layout', { slots: slots }));
+  slots.body = renderPartial(req, template, data);
+  res.send(renderPartial(req, 'layout', { slots: slots }));
 }
 
-function renderPartial(template, data)
+function renderPartial(req, template, data)
 {
+  // Avoid the use of _.defaults when computing the value is expensive;
+  // test and make sure it's necessary
+
+  // Make user permissions available to partials
+  if (_.isUndefined(data.permissions))
+  {
+    data.permissions = getPermissions(req);
+  }
+
+  // Compile the template if we haven't already
   if (_.isUndefined(options.templates[template]))
   {
     options.templates[template] = _.template(fs.readFileSync(__dirname + '/templates/' + template + '._', 'utf8'));
   }
-  _.defaults(data, { options: options, slots: {}, partial: function(partial, partialData) {
-    _.defaults(partialData, { slots: data.slots });
-    return renderPartial(partial, partialData);
-  }});
+
+  // Inject a partial() function for rendering another partial inside this one
+  if (_.isUndefined(data.partial))
+  {
+    data.partial = function(partial, partialData) {
+      _.defaults(partialData, { slots: data.slots });
+      return renderPartial(req, partial, partialData);
+    };
+  }
+
+  // Inject the options so we can call whatever we need;
+  // create a slot context if we don't have one already from
+  // the call we're nested in
+  _.defaults(data, { options: options, slots: {} }); 
+
+  // Render the template
   return options.templates[template](data);
 }
 

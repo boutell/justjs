@@ -22,7 +22,7 @@
 						<span class="icon-bar"></span>
 					</a>
 				<% } %>
-				<a class="brand" href="#">justjs</a>
+				<a class="brand" href="/">justjs</a>
 				<% // If we needed tabs, they'd go here! %>
 				<% if (false) { %>
 					<div class="nav-collapse">
@@ -48,6 +48,7 @@
 	</div>
 <% // Scripts at the end, for faster page load %>
 <script type="text/javascript" src="/static/js/jquery-1.7.2.min.js"></script>
+<script type="text/javascript" src="/static/js/justjs.js"></script>
 <% // Load the expensive stuff only when needed %>
 <% if (slots.richTextEditor) { %>
 	<script type="text/javascript" src="/static/ckeditor/ckeditor.js"></script>

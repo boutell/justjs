@@ -5,5 +5,7 @@
 <% } %>
 
 <ul class="posts">
-<% _.each(posts, function(post) { print(options.templates.postBody(post)); }) %>
+<% _.each(posts, function(post) { %>
+	<%= partial('postBody', post) %>
+<% }) %>
 </ul>
