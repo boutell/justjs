@@ -1,5 +1,7 @@
 <% _.defaults(slots, { crumbs: [] }) %>
 <% slots.richTextEditor = true %>
 <% var action = '/posts/' + post.slug + '/edit' %>
-<% slots.crumbs.unshift({'title': 'Editing ' + post.title, 'href': action }) %>
+<% slots.crumbs.unshift({'title': post.title, 'href': '/posts/' + post.slug}) %>
+<% slots.crumbs.unshift({'title': 'Edit', 'href': action }) %>
+<% slots.title = ': ' + post.title + ': edit' %>
 <%= partial('form', { 'post': post, 'action': action }) %>
