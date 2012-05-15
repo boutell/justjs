@@ -11,18 +11,20 @@ var options = {
   },
   templates: {},
   // In production you should override this in config-local.js
-  sessionSecret: 'CHANGEME'
+  sessionSecret: 'CHANGEME',
+  // Your UA-XXXXX tracking code, if you have one
+  googleAnalytics: false
 };
 
 try
 {
   // In staging and production get the port number from stagecoach
   // http://github.com/punkave/stagecoach
-  options.port = fs.readFileSync(__dirname + '/data/port', 'UTF-8').replace(/\s+$/, '');
+  options.http.port = fs.readFileSync(__dirname + '/data/port', 'UTF-8').replace(/\s+$/, '');
 } catch (err)
 {
   // This is handy in a dev environment
-  console.log("I see no data/port file, defaulting to port " + options.port);
+  console.log("I see no data/port file, defaulting to port " + options.http.port);
 }
 
 // Let settings specific to this server override global settings
@@ -235,7 +237,7 @@ app.post('/new', function(req, res) {
 function sendPage(req, res, template, data)
 {
   // It's useful to be able to access the user's name
-  var slots = { 'user': req.user };
+  var slots = { 'user': req.user, 'googleAnalytics': options.googleAnalytics };
   _.defaults(data, { slots: slots });
   slots.body = renderPartial(req, template, data);
   res.send(renderPartial(req, 'layout', { slots: slots }));
