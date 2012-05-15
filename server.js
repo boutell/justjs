@@ -14,6 +14,17 @@ var options = {
   sessionSecret: 'CHANGEME'
 };
 
+try
+{
+  // In staging and production get the port number from stagecoach
+  // http://github.com/punkave/stagecoach
+  options.port = fs.readFileSync(__dirname + '/data/port', 'UTF-8').replace(/\s+$/, '');
+} catch (err)
+{
+  // This is handy in a dev environment
+  console.log("I see no data/port file, defaulting to port " + options.port);
+}
+
 // Let settings specific to this server override global settings
 // Use a local relative path (./) to require a file here in this project
 // rather than one in NPM
@@ -192,7 +203,7 @@ app.get('/new', function(req, res) {
   sendPage(req, res, 'new', {});
 });
 
-app.post('/create', function(req, res) {
+app.post('/new', function(req, res) {
   permissions = getPermissions(req);
   if (!permissions.post)
   {

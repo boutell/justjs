@@ -24,12 +24,12 @@
 				<% } %>
 				<a class="brand" href="/">justjs</a>
 				<% // If we needed tabs, they'd go here! %>
-				<% if (false) { %>
+				<% if (true) { %>
 					<div class="nav-collapse">
 					<ul class="nav">
-					<li class="active"><a href="#">Home</a></li>
-					<li><a href="#about">About</a></li>
-					<li><a href="#contact">Contact</a></li>
+					<li class="active"><a href="#">Blog</a></li>
+					<li><a href="http://github.com/boutell/justjs">Code</a></li>
+					<li><a href="mailto:boutell@boutell.com?subject=justjs">Contact</a></li>
 					</ul>
 					</div><!--/.nav-collapse -->
 			    <% } %>
