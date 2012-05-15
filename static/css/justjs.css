@@ -17,6 +17,11 @@ body
 	height: 200px;
 }
 
+.post-body h3
+{
+	padding-bottom: 10px;
+}
+
 .date
 {
 	font-size: 100%;
