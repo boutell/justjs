@@ -28,7 +28,7 @@ try
 // Let settings specific to this server override global settings
 // Use a local relative path (./) to require a file here in this project
 // rather than one in NPM
-_.extend(options, require('./config-local.js'));
+_.extend(options, require('./data/config-local.js'));
 
 var fs = require('fs');
 var mongo = require('mongodb');
