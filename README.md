@@ -1,7 +1,7 @@
 justjs
 ======
 
-justjs is an autobiographical, open-source blog about node.js development. I'll be using it to blog about it, just as soon as there is enough functionality in place.
+justjs is an autobiographical, open-source blog about node.js development. I'm using it to blog about it.
 
 To get it running you'll need to install node and mongodb and do 'npm install', then:
 
