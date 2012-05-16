@@ -13,7 +13,9 @@ var options = {
   // In production you should override this in config-local.js
   sessionSecret: 'CHANGEME',
   // Your UA-XXXXX tracking code, if you have one
-  googleAnalytics: false
+  googleAnalytics: false,
+  url: 'http://justjs.com',
+  description: 'justjs: an autobiographical blog of full-stack javascript web app development'
 };
 
 try
@@ -39,6 +41,7 @@ var express = require('express');
 var passport = require('passport');
 var app = express.createServer();
 var sanitize = require('validator').sanitize;
+var RSS = require('rss');
 
 // Use the body parser express middleware to automatically parse
 // POST form submissions
@@ -105,6 +108,39 @@ app.get('/', function(req, res) {
     }
     // Use permissions to determine whether to show the 'post' button
     sendPage(req, res, 'index', { posts: posts, 'permissions': getPermissions(req) });
+  });
+});
+
+app.get('/feed.rss', function(req, res) {
+  postCollection.find().sort({created: -1}).toArray(function(err, posts) {
+    if (err)
+    {
+      throw err;
+    }
+    // Create an RSS feed using Dylan Greene's nifty rss npm module
+    var feed = new RSS({
+      title: 'justjs',
+      description: options.description,
+      feed_url: options.url + '/feed.rss',
+      site_url: options.url,
+      author: options.author,
+    });
+
+    _.each(posts, function(post) {
+      feed.item({
+        title: post.title,
+        description: post.body,
+        url: options.url + '/posts/' + post.slug,
+        guid: post.slug,
+        author: options.author,
+        date: post.date
+      });
+    });
+
+    var xml = feed.xml();
+
+    res.contentType('application/rss+xml');
+    res.send(xml);
   });
 });
 

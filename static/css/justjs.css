@@ -46,3 +46,9 @@ h3.date
 {
 	padding-bottom: 10px;
 }
+
+.rss-feed
+{
+	margin-top: -5px;
+	margin-left: 3px;
+}

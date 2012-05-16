@@ -21,5 +21,9 @@ module.exports = {
   sessionSecret: 'CHANGEME',
 
   // Replace with YOUR twitter username
-  admin: 'boutell'
+  admin: 'boutell',
+  googleAnalytics: 'UA-XXXXXXX',
+
+  // In production you'd most likely drop the dev. and the port number
+  url: 'http://dev.justjs.com:3000'
 };
