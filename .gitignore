@@ -8,3 +8,8 @@ config-local.js
 # Data files local to the server will live here
 data
 
+# Automatically generated things I do not want (github's suggested list)
+.DS_Store*
+ehthumbs.db
+Icon?
+Thumbs.db
