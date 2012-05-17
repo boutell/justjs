@@ -44,6 +44,7 @@
 		<%= partial('crumbs', {}) %>
 		<div class="row">
 			<div class="span12">
+				<h1>justjs: node.js tutorials</h1>
 				<%= slots.body %>
 			</div>
 		</div>
