@@ -5,6 +5,11 @@ body
 	padding-top: 60px;
 }
 
+p.hint
+{
+	padding-top: 10px;
+}
+
 /* Reasonable styles for the "new post" form */
 form .post-title
 {

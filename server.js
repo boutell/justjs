@@ -101,7 +101,7 @@ function ready(err, results)
 }
 
 app.get('/', function(req, res) {
-  postCollection.find().sort({created: -1}).toArray(function(err, posts) {
+  postCollection.find().sort({created: (req.session.first ? 1 : -1)}).toArray(function(err, posts) {
     if (err)
     {
       throw err;
@@ -237,6 +237,16 @@ app.get('/posts/:slug/delete', function(req, res) {
   });
 });
 
+app.get('/last', function(req, res) {
+  req.session.first = false;
+  res.redirect('/');
+});
+
+app.get('/first', function(req, res) {
+  req.session.first = true;
+  res.redirect('/');
+});
+
 app.get('/new', function(req, res) {
   sendPage(req, res, 'new', {});
 });
@@ -272,8 +282,8 @@ app.post('/new', function(req, res) {
 // (such as overrides of the page title) to be passed back to the layout 
 function sendPage(req, res, template, data)
 {
-  // It's useful to be able to access the user's name
-  var slots = { 'user': req.user, 'googleAnalytics': options.googleAnalytics };
+  // It's useful to be able to access the user and session objects
+  var slots = { 'user': req.user, 'session': req.session, 'googleAnalytics': options.googleAnalytics };
   _.defaults(data, { slots: slots });
   slots.body = renderPartial(req, template, data);
   res.send(renderPartial(req, 'layout', { slots: slots }));

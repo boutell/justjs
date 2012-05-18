@@ -28,7 +28,8 @@
 				<% if (true) { %>
 					<div class="nav-collapse">
 					<ul class="nav">
-						<li class="active"><a href="#">Blog</a></li>
+						<li class="<%= slots.session.first ? '' : 'active' %>"><a href="/last">Last</a></li>
+						<li class="<%= slots.session.first ? 'active' : '' %>"><a href="/first">First</a></li>
 						<li><a href="http://github.com/boutell/justjs">Code</a></li>
 						<li><a href="mailto:boutell@boutell.com?subject=justjs">Contact</a></li>
 						<li><a href="/feed.rss" alt="RSS Feed">Subscribe <img class="rss-feed" src="/static/images/feed-icon-14x14.png" /></a></li>
@@ -45,6 +46,9 @@
 		<div class="row">
 			<div class="span12">
 				<h1>justjs: node.js tutorials</h1>
+				<% if (_.isUndefined(slots.session.first)) { %>
+					<p class="hint"><em>New here? You might want to <a href="/first">start at the beginning.</a></em></p>
+				<% } %>
 				<%= slots.body %>
 			</div>
 		</div>
