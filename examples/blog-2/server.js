@@ -1,5 +1,5 @@
-// With Node, every website is actually a webserver unto itself.
-// Webservers speak HTTP. So we require the HTTP module.
+// Bring in Express, which provides its own server objects that
+// wrap Node's http module
 
 var express = require('express');
 
