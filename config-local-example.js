@@ -22,8 +22,13 @@ module.exports = {
 
   // Replace with YOUR twitter username
   admin: 'boutell',
+  // These are specific to you as well
   googleAnalytics: 'UA-XXXXXXX',
-
+  disqus: {
+    shortname: 'justjs',
+    // Set to false in production
+    'developer': true
+  },
   // In production you'd most likely drop the dev. and the port number
-  url: 'http://dev.justjs.com:3000'
+  url: 'http://dev.justjs.com:3000',
 };

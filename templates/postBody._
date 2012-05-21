@@ -1,6 +1,9 @@
 <div class="post">
 	<% if (typeof(created) !== 'undefined') { %>
-	  <h3 class="date"><%= partial('date', { date: created }) %></h3>
+	  <h3 class="date">
+	  	<%= partial('date', { date: created }) %> 
+	  	<a data-disqus-identifier="<%= _id %>" href="/posts/<%- slug %>#disqus_thread"></a>
+	  </h3>
 	<% } %>
 	<h2><a href="/posts/<%- slug %>"><%- title %></a></h2>
 	<div class="postBody">

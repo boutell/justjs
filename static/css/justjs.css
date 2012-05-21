@@ -34,6 +34,11 @@ h3.date
 	float: right;
 }
 
+h3.date a
+{
+	padding-left: 10px;
+}
+
 .posts
 {
 	margin: 0px;

@@ -283,7 +283,7 @@ app.post('/new', function(req, res) {
 function sendPage(req, res, template, data)
 {
   // It's useful to be able to access the user and session objects
-  var slots = { 'user': req.user, 'session': req.session, 'googleAnalytics': options.googleAnalytics };
+  var slots = { 'user': req.user, 'session': req.session, 'options': options };
   _.defaults(data, { slots: slots });
   slots.body = renderPartial(req, template, data);
   res.send(renderPartial(req, 'layout', { slots: slots }));
