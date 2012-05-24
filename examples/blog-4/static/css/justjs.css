@@ -1,0 +1,22 @@
+body 
+{
+	/* Without this (borrowed from one of the bootstrap samples) the bootstrap navbar
+	  clobbers the top of the content. */
+	padding-top: 60px;
+}
+
+h1
+{
+	padding-bottom: 10px;
+}
+
+.button-box
+{
+	padding: 10px 0px 10px 0px;
+}
+
+.post-body
+{
+	width: 500px;
+	height: 200px;
+}
