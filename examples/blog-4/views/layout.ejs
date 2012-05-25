@@ -1,35 +1,33 @@
 <!DOCTYPE html>
-<% _.defaults(slots, { title: '', bodyClass: '', crumbs: [] }) %>
 <% slots.crumbs.unshift({'title': 'Home', 'href': '/'}) %>
 <html lang="en">
 <head>
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>justjs: <%= slots.title %></title>
-	<link href="/static/css/justjs.css" rel="stylesheet" />
-	<link href="/static/bootstrap/css/bootstrap.css" rel="stylesheet" />
-	<link href="/static/bootstrap/css/bootstrap-responsive.css" rel="stylesheet" />
-	<link href="/feed.rss" rel="alternate" type="application/rss+xml" title="justjs: latest updates" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>justjs: <%= slots.title %></title>
+  <link href="/static/css/justjs.css" rel="stylesheet" />
+  <link href="/static/bootstrap/css/bootstrap.css" rel="stylesheet" />
+  <link href="/static/bootstrap/css/bootstrap-responsive.css" rel="stylesheet" />
 </head>
-<body class="<%= slots.bodyClass %>">
-    <div class="navbar navbar-fixed-top">
-		<div class="navbar-inner">
-			<div class="container">
-				<a class="brand" href="/">justjs</a>
-			</div>
-		</div>
+<body class="<%- slots.bodyClass %>">
+  <div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="brand" href="/">justjs</a>
+      </div>
     </div>
+  </div>
 
-	<div class="container">
-		<%- partial('crumbs', {}) %>
-		<div class="row">
-			<div class="span12">
-				<h1>justjs: <%= slots.title %></h1>
-				<%- slots.body %>
-			</div>
-		</div>
-	</div>
-	<!-- Scripts at the end, for faster page load -->
-	<!-- Pretty soon we're bound to want jquery! -->
-	<script type="text/javascript" src="/static/js/jquery-1.7.2.min.js"></script>
+  <div class="container">
+    <%- partial('crumbs', {}) %>
+    <div class="row">
+      <div class="span12">
+        <h1>justjs: <%= slots.title %></h1>
+        <%- slots.body %>
+      </div>
+    </div>
+  </div>
+  <!-- Scripts at the end, for faster page load -->
+  <!-- Pretty soon we're bound to want jquery! -->
+  <script type="text/javascript" src="/static/js/jquery-1.7.2.min.js"></script>
 </body>
 </html>

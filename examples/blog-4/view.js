@@ -8,14 +8,15 @@ var fs = require('fs');
 var options;
 var templates = {};
 
-module.exports = portrait = {
-  init: function init(optionsArg)
+module.exports = view = {
+  init: function init(optionsArg, callback)
   {
     options = optionsArg;
     if (!options.viewDir)
     {
       throw new Error("options.viewDir is required, please tell me where the views are");
     }
+    callback();
   },
 
   // Render a page template nested in the layout, allowing slots 
@@ -25,30 +26,36 @@ module.exports = portrait = {
   // data.slots.title, etc. and that will be seen by the layout
   page: function page(template, data)
   {
+    if (!data)
+    {
+      data = {};
+    }
     // Defaulting the crumbs slot to an empty array is helpful because
     // it saves having an explicit default for it in every partial
-    _.defaults(data, { slots: { crumbs: [] } });
-    data.slots.body = portrait.partial(template, data);
-    // Easy to change the layout from a partial...
-    if (_.isUndefined(data.slots.layout))
-    {
-      data.slots.layout = 'layout';
-    }
+    _.defaults(data, { slots: { crumbs: [], title: '', bodyClass: '' } });
+    data.slots.body = view.partial(template, data);
+    // If a partial has already set the 'layout' slot, respect that instead
+    // of the default layout name
+    _.defaults(data.slots, { layout: 'layout' });
     // ... Or cancel the layout from a partial
     if (data.slots.layout === false)
     {
       return data.slots.body;
     }
-    return portrait.partial(data.slots.layout, { slots: data.slots });
+    return view.partial(data.slots.layout, { slots: data.slots });
   },
 
   partial: function partial(template, data)
   {
+    if (!data)
+    {
+      data = {};
+    }
     // Avoid the use of _.defaults when computing the value is expensive;
     // test and make sure it's necessary
 
     // Compile the template if we haven't already
-    if (_.isUndefined(templates[template]))
+    if (!templates[template])
     {
       // Synchronous operations are a little outside the node spirit, but reading
       // small files from the filesystem is very fast, and we only do it once per template,
@@ -59,11 +66,15 @@ module.exports = portrait = {
     // Inject a partial() function for rendering another partial inside this one. 
     // All partials get to participate in overriding slots, unless we explicitly pass
     // a different 'slots' object at some level
-    if (_.isUndefined(data.partial))
+    if (!data.partial)
     {
       data.partial = function(partial, partialData) {
+        if (!partialData)
+        {
+          partialData = {};
+        }
         _.defaults(partialData, { slots: data.slots });
-        return portrait.partial(partial, partialData);
+        return view.partial(partial, partialData);
       };
     }
 

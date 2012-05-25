@@ -1,6 +1,6 @@
 var _ = require('underscore');
 var express = require('express');
-var portrait = require('./portrait');
+var view;
 
 module.exports = {
   init: function(context, callback) {
@@ -12,8 +12,8 @@ module.exports = {
     // POST request is a convenient req.body object
     app.use(express.bodyParser());
 
-    // Serve templates from this folder
-    portrait.init({viewDir: __dirname + '/views'});
+    // Get the view module from the context
+    view = context.view;
 
     // Serve static files (such as CSS and js) in this folder
     app.use('/static', express.static(__dirname + '/static'));
@@ -27,7 +27,7 @@ module.exports = {
           return;
         }
 
-        res.send(portrait.page('index', {posts: posts}));
+        res.send(view.page('index', {posts: posts}));
       });
     });
 
@@ -39,7 +39,7 @@ module.exports = {
           notFound(res);
           return;
         }
-        res.send(portrait.page('post', {post: post}));
+        res.send(view.page('post', {post: post}));
       });
     });
 
@@ -73,7 +73,7 @@ module.exports = {
     // Send the "new post" page, with an error message if needed
     function newPost(res, message)
     {
-      res.send(portrait.page('new', { 'message': message }));
+      res.send(view.page('new', { 'message': message }));
     }
 
     app.get('*', function(req, res) {

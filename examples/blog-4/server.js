@@ -9,7 +9,7 @@ var async = require('async');
 var context = {};
 context.settings = require('./settings');
 
-async.series([setupDb, setupApp, listen], ready);
+async.series([setupDb, setupView, setupApp, listen], ready);
 
 function setupDb(callback)
 {
@@ -18,6 +18,14 @@ function setupDb(callback)
 
   // Set up the database connection, create context.db.posts object
   context.db.init(context, callback);
+}
+
+function setupView(callback)
+{
+  // Create the view object
+  context.view = require('./view.js');
+  // Serve templates from this folder
+  context.view.init({viewDir: __dirname + '/views'}, callback);
 }
 
 function setupApp(callback)
