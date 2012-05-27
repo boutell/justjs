@@ -43,6 +43,8 @@ var app = express.createServer();
 var sanitize = require('validator').sanitize;
 var RSS = require('rss');
 
+app.use(canonicalizeHost);
+
 // Use the body parser express middleware to automatically parse
 // POST form submissions
 app.use(express.bodyParser());
@@ -460,4 +462,17 @@ function configurePassport()
     res.redirect('/');
   });
   console.log("Installed passport.initialize");
+}
+
+// Canonicalization is good for SEO and prevents user confusion
+function canonicalizeHost(req, res, next)
+{
+  if (req.headers.host !== options.host)
+  {
+    res.redirect('http://' + options.host + req.url, 301);
+  }
+  else
+  {
+    next();
+  }
 }

@@ -14,7 +14,7 @@ module.exports = {
 
     // ACHTUNG: you must visit your site at dev.justjs.com:3000, not localhost:3000,
     // otherwise you'll get session-related errors on login.
-    callbackURL: 'http://dev.justjs.com:3000/auth/twitter/callback'
+    callbackURL: 'http://dev.justjs.com:3000/auth/twitter/callback',
   }
   // Should be unique to your site. Used to hash session identifiers
   // so they can't be easily hijacked
@@ -29,6 +29,8 @@ module.exports = {
     // Set to false in production
     'developer': true
   },
-  // In production you'd most likely drop the dev. and the port number
+  // In production you'd most likely drop the dev. and the port number for both of these
   url: 'http://dev.justjs.com:3000',
+  // Used to check for the same host and redirect (canonicalize) if needed
+  host: 'dev.justjs.com:3000'
 };

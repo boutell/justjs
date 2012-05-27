@@ -1,0 +1,21 @@
+<% slots.title = "New Post" %>
+<% if (message) { %>
+  <%= message %>
+<% } %>
+<div class="row">
+  <div class="span9">
+    <form class="well" method="POST" action="/new">
+      <fieldset>
+        <label>Title</label>
+        <input name="title" class="post-title" value=""/>
+      </fieldset>
+      <fieldset>
+        <label>Body</label>
+        <textarea name="body" class="post-body"></textarea>
+      </fieldset>
+      <fieldset>
+        <input class="btn btn-primary btn-large" type="submit" value="Save" />
+      </fieldset>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,7 @@
+<% slots.title = "My Blog" %>
+<div class="button-box"><a class="btn" href="/new">New Post</a></div>
+<ul>
+  <% _.each(posts, function(post) { %>
+    <li><a href="/posts/<%= post.slug %>"><%= post.title %></a></li>
+  <% }) %>
+</ul>
