@@ -18,7 +18,8 @@
     "validator": "~0.4.6-2",
     "rss": "0.0.3",
     "passport-google": "~0.2.0",
-    "minimatch": "~0.2.4"
+    "minimatch": "~0.2.4",
+    "connect-mongodb": "~1.1.3"
   },
   "devDependencies": {},
   "optionalDependencies": {},

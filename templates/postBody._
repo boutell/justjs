@@ -1,12 +1,15 @@
 <div class="post">
-	<% if (typeof(created) !== 'undefined') { %>
-	  <h3 class="date">
-	  	<%= partial('date', { date: created }) %> 
-	  	<a data-disqus-identifier="<%= _id %>" href="/posts/<%- slug %>#disqus_thread"></a>
-	  </h3>
-	<% } %>
-	<h2><a href="/posts/<%- slug %>"><%- title %></a></h2>
-	<div class="postBody">
-	<%= body %>
-	</div>
+  <% if (typeof(post.created) !== 'undefined') { %>
+    <h3 class="date">
+      <%= partial('date', { date: post.created }) %> 
+      <a data-disqus-identifier="<%= post._id %>" href="/posts/<%- post.slug %>#disqus_thread"></a>
+    </h3>
+  <% } %>
+  <h2><a href="/posts/<%- post.slug %>"><%= post.title %></a></h2>
+  <div class="postBody">
+    <%= post.body %>
+  </div>
+  <% if (readMore) { %>
+    <a class="btn" href="/posts/<%- post.slug %>">Read More</a>
+  <% } %>
 </div>

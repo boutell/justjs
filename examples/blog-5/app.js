@@ -21,8 +21,14 @@ module.exports = {
     // We need cookie parsing support for Passport
     context.app.use(express.cookieParser());
 
+    // Bring in the connect-mongodb session handler
+    var connectMongoDb = require('connect-mongodb');
+
+    // Create our session storage
+    var mongoStore = new connectMongoDb({ db: context.mongoConnection });
+
     // Our user sessions should be authenticated with a secret unique to this project
-    context.app.use(express.session({ secret: context.settings.sessionSecret }));
+    context.app.use(express.session({ secret: context.settings.sessionSecret, store: mongoStore }));
 
     // Serve static files (such as CSS and js) in this folder
     app.use('/static', express.static(__dirname + '/static'));
@@ -180,8 +186,11 @@ module.exports = {
       // access was granted, the user will be logged in.  Otherwise,
       // authentication has failed.
       app.get('/auth/google/callback', 
-        passport.authenticate('google', { successRedirect: '/',
-                                           failureRedirect: '/' }));
+        passport.authenticate('google', 
+          { 
+            successRedirect: '/',
+            failureRedirect: '/' 
+          }));
 
       app.get('/logout', function(req, res)
       {

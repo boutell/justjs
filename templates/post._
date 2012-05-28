@@ -1,7 +1,7 @@
 <% _.defaults(slots, { crumbs: [] }) %>
 <% slots.crumbs.unshift({'title': post.title, 'href': '/posts/' + post.slug}) %>
 <% slots.title = ': ' + post.title %>
-<%= partial('postBody', post) %>
+<%= partial('postBody', { post: post, readMore: false }) %>
 <% if (permissions.post) { %>
 	<div class="btn-group">
 		<a class="btn" href="/posts/<%= post.slug %>/edit"><i class="icon-edit"></i></a>

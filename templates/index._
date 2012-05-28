@@ -6,6 +6,6 @@
 
 <ul class="posts">
 <% _.each(posts, function(post) { %>
-	<%= partial('postBody', post) %>
+	<%= partial('postBody', { post: post, readMore: true }) %>
 <% }) %>
 </ul>

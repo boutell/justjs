@@ -19,6 +19,10 @@ module.exports = db = {
       new mongo.Server(settings.db.host, settings.db.port, {}), 
       {});
 
+    // Store it in the context for use by other mongodb-powered code outside
+    // the model layer of our app, such as the connect-mongodb session storage handler
+    context.mongoConnection = dbConnection;
+
     // db.open doesn't happen right away; we pass a callback function
     // to know when it succeeds
     dbConnection.open(function(err) {

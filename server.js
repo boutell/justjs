@@ -108,6 +108,24 @@ app.get('/', function(req, res) {
     {
       throw err;
     }
+
+    // 100 word limit on each summary, HTML removed. TODO: this should be offered to the validator module,
+    // or maybe as an ejs filter
+    _.each(posts, function(post) {
+      // Strip HTML tags
+      var text = post.body.replace(/<(?:.|\n)*?>/gm, '');
+      // Split into words
+      var words = text.split(/\s+/);
+      // Slice off first 100 words
+      summaryWords = words.slice(0, 200);
+      post.body = summaryWords.join(' ');
+      // Add ellipsis if we cut it short
+      if (words.length !== summaryWords.length)
+      {
+        post.body += '&hellip;';
+      }
+    });
+
     // Use permissions to determine whether to show the 'post' button
     sendPage(req, res, 'index', { posts: posts, 'permissions': getPermissions(req) });
   });
