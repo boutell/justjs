@@ -112,8 +112,6 @@ app.get('/', function(req, res) {
     // 100 word limit on each summary, HTML removed. TODO: this should be offered to the validator module,
     // or maybe as an ejs filter
     _.each(posts, function(post) {
-      // Dump the H3 tags entirely, they tend to wreck the flow of summaries
-      post.body = post.body.replace(/\<h3\>.*?\<\/h3\>/gm, '');
       // Strip HTML tags
       var text = post.body.replace(/<(?:.|\n)*?>/gm, '');
       // Split into words
