@@ -10,6 +10,8 @@
     <%= post.body %>
   </div>
   <% if (readMore) { %>
-    <a class="btn" href="/posts/<%- post.slug %>">Read More</a>
+    <div class="read-more-box">
+      <a class="btn" href="/posts/<%- post.slug %>">Read More</a>
+    </div>
   <% } %>
 </div>
