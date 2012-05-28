@@ -149,7 +149,7 @@ app.get('/feed.rss', function(req, res) {
     _.each(posts, function(post) {
       feed.item({
         title: post.title,
-        description: post.body,
+        description: post.body + "<h4><a href=\"" + options.url + "/posts/" + post.slug + "#disqus_thread\">Comment on this post</a></h4>",
         url: options.url + '/posts/' + post.slug,
         guid: post.slug,
         author: options.author,
