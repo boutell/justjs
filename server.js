@@ -113,7 +113,7 @@ app.get('/', function(req, res) {
     // or maybe as an ejs filter
     _.each(posts, function(post) {
       // Dump the H3 tags entirely, they tend to wreck the flow of summaries
-      post.body.replace(/\<h3\>.*?\<\/h3\>/gm, '');
+      post.body = post.body.replace(/\<h3\>.*?\<\/h3\>/gm, '');
       // Strip HTML tags
       var text = post.body.replace(/<(?:.|\n)*?>/gm, '');
       // Split into words
