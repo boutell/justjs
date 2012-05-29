@@ -1,3 +1,4 @@
+<% slots.description = "node.js and JavaScript tutorials. Learn node.js, MongoDB and more JavaScript tools from the ground up with Tom Boutell." %>
 <% if (permissions.post) { %>
 	<div class="btn-group">
 		<a class="btn btn-primary btn-large" href="/new">New Post</a>
