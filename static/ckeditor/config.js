@@ -19,5 +19,5 @@ CKEDITOR.editorConfig = function( config )
 	config.stylesSet = 'blog';
 	config.toolbar_blog = [ 
 		{ name: 'styles', items : [ 'Styles' ] }, 
-		{ name: 'basic', items: ['Bold', 'Italic', '-', 'NumberedList', 'BulletedList', '-', 'Link', 'Unlink'] } ];
+		{ name: 'basic', items: ['Bold', 'Italic', '-', 'NumberedList', 'BulletedList', '-', 'Link', 'Unlink', '-', 'Image'] } ];
 };

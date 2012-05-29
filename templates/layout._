@@ -10,6 +10,9 @@
 <link href="/static/bootstrap/css/bootstrap.css" rel="stylesheet" />
 <link href="/static/bootstrap/css/bootstrap-responsive.css" rel="stylesheet" />
 <link href="/feed.rss" rel="alternate" type="application/rss+xml" title="justjs: latest updates" />
+<% if (slots.options.googleSiteVerification) { %>
+	<meta name="google-site-verification" content="<%- slots.options.googleSiteVerification %>" />
+<% } %>
 </head>
 <body class="justjs <%= slots.bodyClass %>">
     <div class="navbar navbar-fixed-top">
