@@ -1,0 +1,12 @@
+<div class="btn-group pull-right">
+	<% if (slots.user) { %>
+		<a class="btn" href="/logout">Log Out</a>
+	<% } else { %>
+		<a class="btn" href="/auth/google">Log In</a>
+	<% } %>
+</div>
+<% if (slots.user) { %>
+  <div class="pull-right display-name">
+  	<%= slots.user.displayName %>
+  </div>
+<% } %>

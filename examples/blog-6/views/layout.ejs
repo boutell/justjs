@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<% slots.crumbs.unshift({'title': 'Home', 'href': '/'}) %>
+<html lang="en">
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>justjs: <%= slots.title %></title>
+  <link href="/static/css/justjs.css" rel="stylesheet" />
+  <link href="/static/bootstrap/css/bootstrap.css" rel="stylesheet" />
+  <link href="/static/bootstrap/css/bootstrap-responsive.css" rel="stylesheet" />
+</head>
+<body class="<%- slots.bodyClass %>">
+  <div class="navbar navbar-fixed-top">
+    <div class="navbar-inner">
+      <div class="container">
+        <a class="brand" href="/">justjs</a>
+        <%- partial('login', {}) %>
+      </div>
+    </div>
+  </div>
+
+  <div class="container">
+    <%- partial('crumbs', {}) %>
+    <%- partial('error', {}) %>
+    <div class="row">
+      <div class="span12">
+        <h1>justjs: <%= slots.title %></h1>
+
+        <%- slots.body %>
+      </div>
+    </div>
+  </div>
+  <!-- Scripts at the end, for faster page load -->
+  <script type="text/javascript" src="/static/js/jquery-1.7.2.min.js"></script>
+  <script type="text/javascript" src="/static/bootstrap/js/bootstrap.min.js"></script>
+  <% if (slots.richTextEditor) { %>
+    <script type="text/javascript" src="/static/ckeditor/ckeditor.js"></script>
+    <script type="text/javascript">
+      $(function() {
+        $('.rich-text-editor').each(function() {
+          CKEDITOR.replace(this);
+        });
+      });
+    </script>
+  <% } %>
+</body>
+</html>

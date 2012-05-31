@@ -1,0 +1,23 @@
+{
+  "author": "Thomas Boutell <boutell@boutell.com> (http://www.boutell.com/)",
+  "name": "justjs-blog-3",
+  "description": "Third iteration of the blog project",
+  "version": "0.0.3",
+  "homepage": "http://justjs.com/",
+  "dependencies": {
+    "underscore": "~1.3.3",
+    "express": "~2.5.9",
+    "mongodb": "~1.0.0",
+    "async": "~0.1.18",
+    "ejs": "~0.7.1",
+    "passport": "~0.1.8",
+    "passport-google": "~0.2.0",
+    "minimatch": "~0.2.4",
+    "connect-mongodb": "~1.1.3"
+  },
+  "devDependencies": {},
+  "optionalDependencies": {},
+  "engines": {
+    "node": "*"
+  }
+}
