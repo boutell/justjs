@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  	<title>vidmood</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script type="text/javascript" src="/static/js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/static/js/underscore-min.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.cookie.js"></script>
+    <link href="/static/bootstrap/css/bootstrap.css" rel="stylesheet" />
+    <link href="/static/bootstrap/css/bootstrap-responsive.css" rel="stylesheet" />
+    <style type="text/css">
+      /* Without this (borrowed from one of the bootstrap samples) the bootstrap navbar
+        clobbers the top of the content. */
+      body
+      {
+        padding-top: 60px;
+      }
+      .mood-field label
+      {
+        display: inline;
+        padding-right: 10px;
+      }
+      .login-required
+      {
+        margin-left: 20px;
+        display: none;
+      }
+      .spinner
+      {
+        display: none;
+        height: 20px;
+      }
+      .player
+      {
+        width: 360px;
+        height: 290px;
+        padding: 10px;
+        overflow: hidden;
+        position: relative;
+        float: left;
+      }
+      .player .thumbnail
+      {
+        width: 360px;
+        height: 240px;
+        position: relative;
+        overflow: hidden;
+        background-position: center;
+      }
+      .player .livePlayer
+      {
+        width: 360px;
+        height: 240px;
+        cursor: pointer;
+        position: relative;
+      }
+      .player .thumbnail .label
+      {
+        color: white;
+        position: absolute;
+        top: 50%;
+        width: 100%;
+        font-size: 80px;
+        text-align: center;
+        margin-top: -0.5em;
+        line-height: 1.0;
+        cursor: pointer;
+        text-shadow: -1px 0 black, 0 1px black, 1px 0 black, 0 -1px black;
+        background: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="/">vidmood</a>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="span12">
+          <form class="mood-form" action="/" method="GET">
+            <fieldset class="mood-field">
+              <label for="mood">How do you feel?</label>
+              <input name="mood" maxlength="20" size="20" />
+              <input class="submit" type="submit" value="Express Yourself" />
+              <img class="spinner" src="/static/images/spinner.gif" />
+              <span class="help login-required"><em>We'll ask you to log in via Twitter, so you can share.</em></span>
+            </fieldset>
+          </form>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="span12 feed">
+        </div>
+      </div>
+    </div>
+
+    <script type="text/javascript">
+      var user = %USER%;
+      var playerTemplate;
+      var livePlayerTemplate;
+
+      $(function() {
+        playerTemplate = _.template($('#playerTemplate').html());
+        livePlayerTemplate = _.template($('#livePlayerTemplate').html());
+        if (!user)
+        {
+          $('.login-required').show();
+        }
+        updateFeedSoon();
+        $('.mood-form').submit(function() {
+          startSpinner();
+          if (!user)
+          {
+            $.cookie('mood', $('.mood-form [name=mood]').val());
+            document.location.href = '/auth/twitter';
+          }
+          else
+          {
+            $.post('/mood', $('.mood-form').serialize(), function(mood) {
+              updateFeedSoon();
+              stopSpinner();
+            }, 'json');
+          }
+          return false;
+        });
+ 
+        // Have we just returned from Twitter? Restore the mood the user
+        // was trying to set from the cookie, clear the cookie, and 
+        // submit the mood form again
+        var mood = $.cookie('mood');
+        if (mood !== null)
+        {
+          $.cookie('mood', null);
+          console.log('I killed the cookie');
+          $('.mood-form [name=mood]').val(mood);
+          $('.mood-form').submit();
+        }
+      });
+
+      function startSpinner()
+      {
+        $('.mood-form .submit').hide();
+        $('.mood-form .spinner').show();
+      }
+
+      function stopSpinner()
+      {
+        $('.mood-form .submit').show();
+        $('.mood-form .spinner').hide();
+      }
+
+      var feedUpdateTimeout = null;
+
+      var lastMood;
+
+      // You can call updateFeedSoon anytime an update
+      // would be extra nice to have, like right after
+      // a mood is expressed by the user. Left to its
+      // own devices updateFeed will schedule another
+      // invocation of itself for 5 seconds from now.
+      function updateFeedSoon()
+      {
+        if (feedUpdateTimeout)
+        {
+          clearTimeout(feedUpdateTimeout);
+          feedUpdateTimeout = null;
+        }
+        setTimeout(updateFeed, 0);
+      }
+
+      function updateFeed()
+      {
+        feedUpdateTimeout = null;
+        var feedDiv = $('.feed');
+        var params = {};
+        if (lastMood)
+        {
+          params.since = lastMood;
+        }
+        $.getJSON('/feed', params, function(data) {
+          if (data.length)
+          {
+            lastMood = data[0].date;
+          }
+          // Prepend in reverse order. This seems unnecessary on the first
+          // fetch - why not just append in forward order to get the same
+          // result? - but for later fetches, where the feed div is not 
+          // initially empty, this technique allows us to prepend a set of
+          // new results correctly.
+          var data = data.reverse();
+          _.each(data, function(mood) {
+            feedDiv.prepend(playerForMood(mood));
+          });
+          // Schedule the next update for 5 seconds from now if no one
+          // has already requested one sooner
+          if (!feedUpdateTimeout)
+          {
+            feedUpdateTimeout = setTimeout(updateFeed, 5000);
+          }
+        });
+      }
+
+      // Pull the initial feed
+      updateFeedSoon();
+
+      function playerForMood(mood, prepend)
+      {
+        var player = $(playerTemplate({ mood: mood }));
+        player.find('.thumbnail').click(function(event) {
+          var thumbnail = $(this);
+          var livePlayer = $(livePlayerTemplate({ mood: mood }));
+          thumbnail.replaceWith(livePlayer);
+          return false;
+        });
+        return player;
+      }
+
+    </script>
+
+    <script id="playerTemplate" type="text/template">
+      <div class="player">
+        <h4><%= mood.username %> is feeling <%= mood.name %></h4>
+        <div class="thumbnail" style="background-image: url(<%= mood.thumbnail %>)">
+          <div class="label">▶</div>
+        </div>
+      </div>
+    </script>
+    <script id="livePlayerTemplate" type="text/template">
+      <iframe class="livePlayer" class="youtube-player" type="text/html" 
+        src="http://www.youtube.com/embed/<%= mood.youtubeId %>?autoplay=1" frameborder="0">
+      </iframe>
+    </script>
+  </body>
+</html>

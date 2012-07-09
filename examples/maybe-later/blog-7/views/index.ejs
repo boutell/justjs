@@ -1,0 +1,8 @@
+<% slots.title = "My Blog" %>
+<div class="button-box"><a class="btn" data-action="new" href="">New Post</a></div>
+<div data-container="newPost"></div>
+<ul data-container="posts" class="posts">
+  <% _.each(posts, function(post) { %>
+    <%- partial('post', { post: post, subview: true }) %>
+  <% }) %>
+</ul>

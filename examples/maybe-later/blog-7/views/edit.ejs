@@ -1,0 +1,25 @@
+<% slots.richTextEditor = true %>
+<% var newPost = post.isNew && post.isNew() %>
+<% slots.title = newPost ? "New Post" : "Edit Post" %>
+<div class="row">
+  <div class="span9">
+    <form class="well">
+      <fieldset>
+        <label>Title</label>
+        <input data-field="title" class="post-title" value="<%= post.title %>"/>
+      </fieldset>
+      <fieldset>
+        <label>Body</label>
+        <% /* You can't have two identical name attributes for CKEditor textareas */ %>
+        <% /* in one page, even though that is completely legal in two forms in a page. */ %>
+        <% /* This is a problem as we start opening multiple editors. Use a data attribute instead */ %>
+        <textarea data-field="body" 
+          class="post-body rich-text-editor"><%-: post.body | alwaysEscape %></textarea>
+      </fieldset>
+      <fieldset>
+        <a data-action="save" href="" class="btn btn-primary btn-large">Save</a>
+        <a data-action="cancel" href="" class="btn btn-large">Cancel</a>
+      </fieldset>
+    </form>
+  </div>
+</div>

@@ -1,0 +1,11 @@
+<% if (slots.session.error) { %>
+	<div class="row">
+	  <div class="span12">
+  		<div class="alert alert-error">
+  			<button class="close" data-dismiss="alert">×</button>
+  			<%- slots.session.error %>
+        <% slots.session.error = undefined %>
+  		</div>
+	  </div>
+	</div>
+<% } %>

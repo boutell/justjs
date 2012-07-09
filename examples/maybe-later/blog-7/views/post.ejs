@@ -1,0 +1,10 @@
+<% if (subview) { %>
+  <h3><a data-action="nav" href="/posts/<%= post.slug %>"><%= post.title %></a></h3>
+<% } else { %>
+  <% slots.title = post.title %>
+  <% slots.crumbs.unshift({'title': post.title, 'href': '/posts/' + post.slug}) %>
+<% } %>
+<% if (slots.permissions.post) { %>
+  <%- partial('postButtons', { post: post }) %>
+<% } %>
+<%- post.body %>
