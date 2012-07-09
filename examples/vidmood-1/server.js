@@ -38,7 +38,7 @@ var homeTemplate;
 app.get('/', function(req, res) {
   if (!homeTemplate)
   {
-    homeTemplate = fs.readFileSync(__dirname + '/templates/app._', 'utf8');
+    homeTemplate = fs.readFileSync(__dirname + '/templates/app.html', 'utf8');
   }
   res.contentType('text/html');
   res.send(homeTemplate.replace('%USER%', JSON.stringify((req.user ? req.user : null) )));
