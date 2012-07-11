@@ -1,0 +1,324 @@
+When the webpage becomes the app
+
+Earlier installments of justjs focused on building a traditional model-view-controller web application, in which the server renders HTML pages via ejs templates and sends the finished product to the browser. JavaScript was sprinkled in, here and there, but essentially each page was static.
+
+Many web applications take things a step further by empowering the webpage to refresh part of itself, or to submit a form in such a way that it only refreshes the part of the page that needs to change. But the server is still responsible for assembling the page and returning fragments of HTML that replace parts of it. This approach was popularized by Ruby on Rails, which provided "helper" functions to dynamically update pages in a few standardized ways, without asking the programmer to actually learn JavaScript. But this approach is limited, and based on outdated assumptions about the limitations of web browsers. These days, we can finally count on a decent degree of smarts in a web browser, and call upon it to do more interesting things.
+
+That brings us to the new wave approach: where the webpage becomes the web application. Rather than asking the server to generate many different pages, we send a single page which contains all - well, almost all - of the application.
+
+What does that "almost all" refer to? The application still needs to be able to retrieve, save and share data. And in most cases that data needs to be shared with other users. So storing it entirely in the web browser doesn't really help much. 
+
+In a nutshell, the model layer still needs to "live" on the webserver. But since the web app in the browser is smart, our node code can be drastically simplified. Rather than rendering page templates, all node.js needs to do is give an appropriate JSON response. This is easy to code, easy to test, and easy to reuse in other applications.
+
+But there's one more thing the webserver still needs to do: decide who to trust. You can code as much validation as you want into your browser-side JavaScript, making sure everything the user inputs looks safe and legal. But the webserver has no way of knowing whether it's talking to your original JavaScript or a five-line shell script that uses the curl command to send nasty commands to take over the world. So while your node code can be simplified, it still needs to concern itself with who can do what. 
+
+That's enough theory. Let's talk about a fun new app, and examine how to build it.
+
+vidmood: social video sharing for moody people
+
+vidmood is an entertaining and social web app, just the sort of thing people like to play with these days. The idea is simple: you tell vidmood how you're feeling, and vidmood pulls up an appropriate YouTube video and adds that to a feed that everyone can see. In order to learn your name, vidmood asks you to log in via Twitter. Later, we'll teach it to tweet out your video moods as well, for an extra kick of viral marketing.
+
+vidmood is split into just two important files: server.js and app.html. server.js contains the node code that responds to requests like "please send me a feed of recent video moods," while app.html is the JavaScript-powered webpage that makes those requests. We'll start with app.html to give you a sense of how this works.
+
+app.html begins with the usual bootstrap stuff and a style element. Then we come to the form used to submit moods:
+
+          <form class="mood-form" action="/" method="GET">
+            <fieldset class="mood-field">
+              <label for="mood">How do you feel?</label>
+              <input name="mood" maxlength="20" size="20" />
+              <input class="submit" type="submit" value="Express Yourself" />
+              <img class="spinner" src="/static/images/spinner.gif" />
+              <span class="help login-required"><em>We'll ask you to log in via Twitter, so you can share.</em></span>
+            </fieldset>
+          </form>
+
+This looks like an ordinary HTML form, the kind that causes an entirely new page to load. But we'll change that with JavaScript as you'll soon see. 
+
+Notice that there's a "spinner" GIF present in the form. The spinner is initially hidden by CSS properties in the style element. We'll reveal it with JavaScript at the right time. 
+
+Below the form, you'll find a div with the "feed" class, just waiting to be stuffed with moods:
+
+        <div class="span12 feed">
+        </div>
+
+Great, but where's the content? This is where JavaScript comes in. The initial structure of the page is just a vessel waiting to be filled. We'll use AJAX requests (Asynchronous Javascript And hardly ever XML) to get the data we need. Then we'll render it using underscore templates, which are compatible with the EJS templates we've seen previously. They just happen to come with underscore "out of the box," which means our app is up and running faster. They aren't as convenient to debug as EJS templates, though. If that bothers you, you can use EJS in the browser as well.
+
+Now let's check out the script tag that drives this puppy. The first line is special:
+
+      var user = %USER%;
+
+"What's this %USER% business?"" For the most part our application will phone up the server and ask for any information it needs. But we can also pass information as part of the page when we first transmit it to the server. Since we're using Twitter logins for this site, any change in the identity of the user always involves loading a new page. So when we transmit the browser-side application code, we'll replace this %USER% placeholder with the user's identity. Here's what it looks like in server.js:
+
+  res.send(homeTemplate.replace('%USER%', JSON.stringify((req.user ? req.user : null) )));
+
+"Why didn't you use EJS or underscore on the server too?" Because app.html also contains Underscore templates, which the server would try to interpret. There are ways around that: it's possible to specify different start and end tags for Underscore.  But since all we really want to do here is pass some JSON data directly in the page, I found it simpler to just use replace().
+
+We'll look at the rest of server.js in the next installment. Let's return our attention to app.html, in browser land:
+
+      var playerTemplate;
+      var livePlayerTemplate;
+
+      $(function() {
+        playerTemplate = _.template($('#playerTemplate').html());
+        livePlayerTemplate = _.template($('#livePlayerTemplate').html());
+
+Here we establish global variables to hold compiled Underscore templates for our mood video players. Then we use jQuery to reach right into the page and fetch the markup for those templates, and pass it to _.template to compile it. 
+
+Notice that we don't try to do anything with the DOM (the Document Object Model) of the browser until we're inside this block:
+
+$(function() {
+  ...
+});
+
+This is a convenient feature of jQuery: pass a callback to the "$" function and it won't be called until the DOM is ready - that is, until the page has loaded sufficiently for jQuery to be sure of "seeing" all the elements in it (although it doesn't wait for really slow things, like loading images).
+
+Now we're ready to start compiling templates:
+
+        playerTemplate = _.template($('#playerTemplate').html());
+        livePlayerTemplate = _.template($('#livePlayerTemplate').html());
+
+But what do the templates look like? Take a look at the end of app.html, after the end of the JavaScript application code:
+
+    <script id="playerTemplate" type="text/template">
+      <div class="player">
+        <h4><%= mood.username %> is feeling <%= mood.name %></h4>
+        <div class="thumbnail" style="background-image: url(<%= mood.thumbnail %>)">
+          <div class="label">▶</div>
+        </div>
+      </div>
+    </script>
+
+"OK, you've got HTML markup inside a script tag. I'm lost." Ah, but take a closer look at that script tag! Where you're used to seeing:
+
+type="text/javascript"
+
+This tag says:
+
+type="text/template"
+
+What does that do for us? It turns out that all web browsers sensibly ignore a script tag with a type they don't recognize. If you specify type and don't set it to text/javascript, the browser will leave your script tag alone - but you can still access its markup later via jQuery's .html() method. So we give these script blocks ids and fetch them with jQuery in the usual way. Flawless victory!
+
+This particular template displays a player for a video mood - or rather, a placeholder for a player, displaying a thumbnail image until the user clicks the "play" button. That avoids the performance hit of loading dozens of YouTube videos on the same page - something you don't want, trust me, especially in older browsers.
+
+"What's up with that little play button arrow?" It's a Unicode black right-pointing triangle character, standard in web fonts like Helvetica, rather than an image. I pump it up and add a border with a bit of CSS in the style tag.
+
+There's a second Underscore template for live players - players that are actually displaying video right now. Whenever the user clicks "play," that particular player switches to the live version. We'll see how in a moment:
+
+    <script id="livePlayerTemplate" type="text/template">
+      <iframe class="livePlayer" class="youtube-player" type="text/html" 
+        src="http://www.youtube.com/embed/<%= mood.youtubeId %>?autoplay=1" frameborder="0">
+      </iframe>
+    </script>
+
+Notice that the template inserts a YouTube ID. Similarly, the previous template inserted a thumbnail URL. Where does that information come from? We'll find out when we check out server.js. Here in app.html all we need to know is how to ask the server for the resources we need.
+
+Let's return to the web application JavaScript code:
+
+        if (!user)
+        {
+          $('.login-required').show();
+        }
+
+Here we display a prompt explaining that the application will ask you to log into Twitter before sharing your mood for the first time. Earlier we saw how the user object is inserted into the script block when the page is transmitted.
+
+The updateFeedSoon() and updateFeed() functions take care of retrieving the latest moods from the server at regular intervals, and also on demand when the user does something that ought to feel instantaneous, like loading the page for the first time or sharing a new mood. It's time to make that first call to updateFeed():
+
+        updateFeed();
+
+This call kicks off the first update of the feed. We only call this function directly once. Anytime we want an update in the future, we'll call updateFeedSoon() to bump the schedule for the next update. If we called updateFeed directly a lot, we'd eventually get two copies of the same mood. Redundant mood feeds are very emo.
+
+It's time to look at the updateFeedSoon() function, as well as the global variables that keep track of whether a timeout has already been set for the next update:
+
+      var feedUpdateTimeout;
+      var updateRequested;
+
+      function updateFeedSoon()
+      {
+        if (feedUpdateTimeout)
+        {
+          clearTimeout(feedUpdateTimeout);
+          feedUpdateTimeout = setTimeout(updateFeed, 0);
+        }
+        else
+        {
+          updateRequested = true;        
+        }
+      }
+
+What's happening here? You are probably familiar with JavaScript's setTimeout() function. setTimeout() schedules another function to be called after a certain amount of time. If you specify zero milliseconds, what happens is that the function is called immediately after the browser takes a deep breath to allow the user to interact with the page. 
+
+But the updateFeedSoon() function can't assume that we haven't scheduled an update already. Indeed, we normally update every five seconds. Instead it checks for an existing timeout and clears it before scheduling the next update to happen as soon as possible.
+
+What if feedUpdateTimeout is null? The updateFeed() function sets that variable back to null each time it starts fetching an update. So a value of null means an update is already in progress. We don't want two updates to happen at once. That's why, in the else {} clause, we set the updateRequested flag. The updateFeed() function will check that flag later to determine that another update is desired as soon as possible.
+
+That leads us to the updateFeed() function that does the actual work of talking to the node server:
+
+      function updateFeed()
+      {
+        feedUpdateTimeout = null;
+        var feedDiv = $('.feed');
+        var params = {};
+        if (lastMood)
+        {
+          params.since = lastMood;
+        }
+        $.getJSON('/feed', params, function(data) { ... });
+      }
+
+Here we use jQuery to fetch a reference to the div with the feed class. Then we build up an array of parameters to send to the /feed route of the node application. Specifically, if we have already loaded the feed at least once, we send the timestamp of the most recent mood we've already seen. That allows the node application to send us just the new content when we call jQuery.getJSON.
+
+jQuery's getJSON method is a convenient way to request a URL and return the JSON-encoded results as ready-to-use data. The first parameter is the URL, the second parameter contains parameters to be stuffed into the query string (exactly like any form submitted via the GET method), and the third is a callback function that will be called with the data when it's ready.
+
+So what does that callback function do when the response arrives from the server? 
+
+First we take note of the most recent mood we've received, so that the next update doesn't contain redundant entries:
+
+          if (data.length)
+          {
+            lastMood = data[0].date;
+          }
+
+Then we're ready to loop over the moods we received from the server, rendering an Underscore template to display a video player for each new mood. In a moment we'll look at the playerForMood function that takes care of the Underscore template rendering:
+
+          var data = data.reverse();
+          _.each(data, function(mood) {
+            feedDiv.prepend(playerForMood(mood));
+          });
+
+"Hang on. Why are you reversing the order of the array and then prepending each player to the feed div? Isn't that the same as appending them in the original order?" It is at first. But after the first update, you'll have lots of moods in the feed div already, and you don't want to append new updates at the end. You want them at the beginning, but in their proper order. Prepending the new players in reverse order gives us the order we want every time.
+
+So what does the playerForMood function do exactly? The first part is simple: 
+
+        var player = $(playerTemplate({ mood: mood }));
+
+Rendering an underscore tempalte is pretty easy, as I mentioned earlier. We've already compiled them, so we can just pass the mood object to the template function and pass the result to jQuery's $ function. When you pass HTML markup to the $ function, you get back a jQuery object that's ready to insert into the document, as we saw above:
+
+            feedDiv.prepend(playerForMood(mood));
+
+But before we append the player, we need to teach it a trick: how to respond to mouse clicks, replacing the thumbnail and play button with an actual YouTube player. Here's the code:
+
+        player.find('.thumbnail').click(function(event) {
+          var thumbnail = $(this);
+          var livePlayer = $(livePlayerTemplate({ mood: mood }));
+          thumbnail.replaceWith(livePlayer);
+          return false;
+        });
+
+Notice that we can add event handlers to our brand new player even before it is added to the feed div. And since this code is nested inside the playerForMood function, we have access to the mood variable. In computer science terms, we've created a closure in which this variable is still available even though the playerForMood function has already returned.
+
+In jQuery event handlers, "this" always refers to the DOM element that responded to the event. But it's not wrapped in a jQuery object yet. So we do that here:
+
+var thumbnail = $(this);
+
+Now we can invoke the Underscore template that generates a live player:
+
+          var livePlayer = $(livePlayerTemplate({ mood: mood }));
+
+(We looked at the source code for the template itself earlier in this article.)
+
+Next we replace the thumbnail with the live player:
+
+          thumbnail.replaceWith(livePlayer);
+
+Finally our jQuery event handler returns false, which is customary when you've done everything that needs doing and don't want the browser to take any default action.
+
+The playerForMood function wraps things up by returning the player:
+
+  return player;
+
+After prepending each player, the updateFeed function has one more task: scheduling the next update via the setTimeout function. A 5000 millisecond timeout gives us reasonably frequent updates without swamping the server. The updateFeed function simply schedules itself to be run again. If the updateRequested flag was set by updateFeedSoon(), we schedule another update right away, otherwise we wait 5 seconds (5000 milliseconds):
+
+          var ms = 5000;
+          if (updateRequested)
+          {
+            updateRequested = false;
+            ms = 0;
+          }
+          feedUpdateTimeout = setTimeout(updateFeed, ms);
+
+So far, so great! We have a feed of moods that updates itself without refreshing the page, and it's all happening through simple API requests to the node server. 
+
+But what about posting new moods? Empty feeds aren't very interesting. We saw a form in the markup, but we haven't yet looked at the JavaScript that submits the form. Let's check out that code.
+
+Posting a new mood to the server can turn out one of two ways. If the user is already logged in, it's simple: we use $.post to send the data, then we invoke updateFeedSoon() to update the feed as soon as possible so that it feels immediate.
+
+If the user isn't logged in yet, we can't post their mood right away. We need to redirect the user away from the JavaScript application, to the /auth/twitter route, which takes care of sending the user to Twitter to log in. But first, we save the mood they are submitting in a cookie, using the jquery.cookie plugin, so that we can try the form submission again later when Twitter returns the user to the page:
+
+          if (!user)
+          {
+            $.cookie('mood', $('.mood-form [name=mood]').val());
+            document.location.href = '/auth/twitter';
+          }
+
+Assigning to document.location.href is a standard way to send the user to a new page.
+
+Notice that we use an unusual jQuery selector here to locate the element inside the mood form that has a "name" attribute set to "mood." That's the input element in which the user typed their mood:
+
+.mood-form [name=mood]
+
+jQuery can do much more than select elements by class. The [attributeName=value] syntax can be used to match only elements that have any particular value for any particular attribute.
+
+When the user is already logged in, we can go ahead and call $.post to submit the contents of the mood form:
+
+          else
+          {
+            $.post('/mood', $('.mood-form').serialize(), function(mood) {
+              updateFeedSoon();
+              stopSpinner();
+            }, 'json');
+          }
+
+$.post works a lot like $.getJSON. The first argument is the URL we're POSTing data to. The second is the data we want to POST. jQuery's serialize() function examines all of the form elements inside the form and extracts them into a nice JavaScript object with properties and values, ready to pass to the $.post function. 
+
+The third argument is a callback function that gets called with the JSON response from the server. Right now, we don't look at that response directly; we just request an update of the feed as soon as convenient, and stop the progress spinner. The fourth argument tells jQuery that we want the response to be parsed as JSON data. (There is no $.postJSON shorthand function, but adding an extra argument isn't much of a burden.)
+
+The complete form submission event handler for the mood form looks like this:
+
+        $('.mood-form').submit(function() {
+          startSpinner();
+          if (!user)
+          {
+            $.cookie('mood', $('.mood-form [name=mood]').val());
+            document.location.href = '/auth/twitter';
+          }
+          else
+          {
+            $.post('/mood', $('.mood-form').serialize(), function(mood) {
+              updateFeedSoon();
+              stopSpinner();
+            }, 'json');
+          }
+          return false;
+        });
+
+We start out by calling startSpinner(), process the form submission or nudge the user to log in, and finally return false - especially important in a form submission event handler, because otherwise the form will be submitted normally and the page will refresh completely. Not what we want. We're much happier updating just the feed div, and only with the latest data from the server.
+
+One more detail: when the user tries to share their mood but hasn't logged in yet, we stash the mood in a cookie and then redirect to Twitter authentication. But for this to be effective we have to do something with that cookie when the user comes back. Here's the logic we need:
+
+        var mood = $.cookie('mood');
+        if (mood !== null)
+        {
+          $.cookie('mood', null);
+          $('.mood-form [name=mood]').val(mood);
+          $('.mood-form').submit();
+        }
+
+Our strategy is simple: if there's a mood cookie, stuff it into the mood element of the form, then submit the form. This way we can reuse the submit handler we already have rather than duplicating effort. Of course we also have to clear the cookie so it doesn't happen over and over.
+
+We're just about finished! startSpinner() and stopSpinner() are worth a quick peek. These functions swap the submit button for the animated spinner GIF and vice versa:
+
+      function startSpinner()
+      {
+        $('.mood-form .submit').hide();
+        $('.mood-form .spinner').show();
+      }
+
+      function stopSpinner()
+      {
+        $('.mood-form .submit').show();
+        $('.mood-form .spinner').hide();
+      }
+
+When Next We Meet
+
+We've seen how to build a JavaScript web application in a single HTML file. And that's very cool. But what about the node server that manipulates all those moods for us? And what about the YouTube API calls that search for appropriate videos? 

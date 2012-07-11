@@ -108,11 +108,15 @@
       $(function() {
         playerTemplate = _.template($('#playerTemplate').html());
         livePlayerTemplate = _.template($('#livePlayerTemplate').html());
+
         if (!user)
         {
           $('.login-required').show();
         }
-        updateFeedSoon();
+
+        // Initial update of the feed
+        updateFeed();
+
         $('.mood-form').submit(function() {
           startSpinner();
           if (!user)
@@ -156,7 +160,9 @@
 
       var feedUpdateTimeout = null;
 
-      var lastMood;
+      var lastMood = null;
+
+      var updateRequested = false;
 
       // You can call updateFeedSoon anytime an update
       // would be extra nice to have, like right after
@@ -168,9 +174,14 @@
         if (feedUpdateTimeout)
         {
           clearTimeout(feedUpdateTimeout);
-          feedUpdateTimeout = null;
+          feedUpdateTimeout = setTimeout(updateFeed, 0);
         }
-        setTimeout(updateFeed, 0);
+        else
+        {
+          // An update is already in progress, request
+          // another one immediately after it
+          updateRequested = true;        
+        }
       }
 
       function updateFeed()
@@ -196,16 +207,17 @@
           _.each(data, function(mood) {
             feedDiv.prepend(playerForMood(mood));
           });
-          // Schedule the next update for 5 seconds from now if no one
-          // has already requested one sooner
-          if (!feedUpdateTimeout)
+          var ms = 5000;
+          if (updateRequested)
           {
-            feedUpdateTimeout = setTimeout(updateFeed, 5000);
+            updateRequested = false;
+            ms = 0;
           }
+          feedUpdateTimeout = setTimeout(updateFeed, ms);
         });
       }
 
-      function playerForMood(mood, prepend)
+      function playerForMood(mood)
       {
         var player = $(playerTemplate({ mood: mood }));
         player.find('.thumbnail').click(function(event) {

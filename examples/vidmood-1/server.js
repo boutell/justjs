@@ -59,6 +59,12 @@ app.post('/mood', function(req, res) {
 	request({ url: 'http://gdata.youtube.com/feeds/api/videos', qs: { q: name, alt: 'json', format: 5 } }, function (error, response, body) {
     if ((!error) && (response.statusCode === 200)) {
       var data = JSON.parse(body);
+      if (!data.feed.entry)
+      {
+        // Probably hitting the server too often
+        res.status = 500;
+        return;
+      }
       var entries = data.feed.entry;
       var count = data.feed.entry.length;
       var i = Math.floor(Math.random() * count);
