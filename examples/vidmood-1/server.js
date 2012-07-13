@@ -4,8 +4,8 @@ var express = require('express');
 var request = require('request');
 var _ = require('underscore');
 var passport = require('passport');
-var mongoose = require('mongoose');
 var fs = require('fs');
+var mongoose = require('mongoose');
 
 var app = express.createServer();
 app.use(canonicalizeHost);
@@ -56,37 +56,53 @@ app.post('/mood', function(req, res) {
     res.status = 403;
     return;
   }
-	request({ url: 'http://gdata.youtube.com/feeds/api/videos', qs: { q: name, alt: 'json', format: 5 } }, function (error, response, body) {
-    if ((!error) && (response.statusCode === 200)) {
-      var data = JSON.parse(body);
-      if (!data.feed.entry)
+  var params = { 
+      url: 'http://gdata.youtube.com/feeds/api/videos', 
+      qs: { q: name, alt: 'json', format: 5 } 
+    };
+	request(params, function (error, response, body) {
+    if (error || (response.statusCode !== 200)) {
+      res.status = 500;
+      return;
+    }
+    var data = JSON.parse(body);
+    if (!data.feed.entry)
+    {
+      // Probably hitting the server too often
+      res.status = 500;
+      return;
+    }
+    var entries = data.feed.entry;
+    var count = data.feed.entry.length;
+    var i = Math.floor(Math.random() * count);
+    var match = /[a-zA-Z0-9_-]+$/.exec(entries[i].id.$t);
+    if (!match)
+    {
+      res.status = 500;
+      return;
+    }
+    var id = match[0];
+    var thumbnail = entries[i].media$group.media$thumbnail[0];
+    var mood = new Mood(
+      { 
+        'username': req.user.username, 
+        'twitterId': req.user.id, 
+        'name': name, 
+        'date': new Date(), 
+        'youtubeId': id, 
+        'thumbnail': thumbnail.url, 
+        'width': thumbnail.width, 
+        'height': thumbnail.height
+      });
+    mood.save(function(err, doc) {
+      if (err)
       {
-        // Probably hitting the server too often
         res.status = 500;
         return;
       }
-      var entries = data.feed.entry;
-      var count = data.feed.entry.length;
-      var i = Math.floor(Math.random() * count);
-      var match = /[a-zA-Z0-9_-]+$/.exec(entries[i].id.$t);
-      if (match)
-      {
-        var id = match[0];
-        var thumbnail = entries[i].media$group.media$thumbnail[0];
-        var mood = new Mood({ 'username': req.user.username, 'twitterId': req.user.id, 'name': name, 'date': new Date(), 'youtubeId': id, 'thumbnail': thumbnail.url, 'width': thumbnail.width, 'height': thumbnail.height});
-        mood.save(function(err, doc) {
-          if (err)
-          {
-            res.status = 500;
-            return;
-          }
-          res.status = 200;
-          res.send(JSON.stringify(mood));
-          return;
-        });
-        return;
-      }
-    }     
+      res.status = 200;
+      res.send(JSON.stringify(mood));
+    });
   });
 });
 
@@ -130,7 +146,6 @@ function configurePassport(app)
   passport.use(new TwitterStrategy(
     options.twitter,
     function(token, tokenSecret, profile, done) {
-      console.log('Creating a user object');
       // We now have a unique id, username and full name (display name) for the user 
       // courtesy of Twitter.
       var user = { 'id': profile.id, 'username': profile.username, 'displayName': profile.displayName };
@@ -180,20 +195,8 @@ function configurePassport(app)
   // access was granted, the user will be logged in.  Otherwise,
   // authentication has failed.
   app.get('/auth/twitter/callback',
-    passport.authenticate('twitter', { successRedirect: '/auth/after',
-                                       failureRedirect: '/login' }));
-
-  app.get('/auth/after',
-    function(req, res) {
-      if (req.session.after)
-      {
-        res.redirect(req.session.after);
-      }
-      else
-      {
-        res.redirect('/');
-      }
-    });
+    passport.authenticate('twitter', { successRedirect: '/',
+                                       failureRedirect: '/' }));
 
   app.get('/logout', function(req, res)
   {
@@ -216,17 +219,3 @@ function canonicalizeHost(req, res, next)
   }
 }
 
-function connect(callback)
-{
-  db = new mongo.Db(options.db.name, new mongo.Server(options.db.host, options.db.port, {}), {});
-  db.open(function(err, client) {
-    postCollection = db.collection('post');
-    postCollection.ensureIndex("slug", { unique: true }, function(err, indexName) 
-    {
-      console.log('Database initialized');
-      callback(err);
-    });
-    // Enhance postCollection with our insertUniquely method
-    postCollection.insertUniquely = insertUniquely;
-  });
-}

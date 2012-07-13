@@ -1,0 +1,401 @@
+vidmood, part II: storing all the things, finding all the videos
+
+In the previous installment, we checked out vidmood, a JavaScript-powered social web app contained in a single HTML file. Of course, that's a little bit of a lie. To be social, the app needs to share data with other users. And it also needs to find appropriate YouTube videos to match your mood, which requires talking to the YouTube API. JavaScript in the browser can't do either of those things all by itself. We need a backend server to talk to. And that's where Node comes in.
+
+Unlike previous projects, this time I've kept the server code in a single server.js file, just to demonstrate how manageable that can be for simple apps. Especially when we take advantage of npm modules like Express and Mongoose rather than reinventing wheels.
+
+Enough prologue! Let's check out server.js. We begin by loading our options from a separate .js file (hey, it doesn't count if it only contains settings):
+
+var options = require('./data/options.js');
+
+Notice that I put options.js in a data/ subdirectory. My preferred style is to keep everything that is server-specific and should not be crushed by every new deployment in a folder called "data." Since options.js for my Mac has different settings than the version on my Linux VPS production server, it makes sence to keep this file in the data folder.
+
+Here's options.js for my Mac test environment:
+
+module.exports = {
+  twitter: {
+    consumerKey: 'xxxxx',
+    consumerSecret: 'xxxxx',
+    callbackURL: 'http://vidmood-dev.justjs.com:3000/auth/twitter/callback'
+  },
+  sessionSecret: 'whatever',
+  host: 'vidmood-dev.justjs.com:3000',
+  db: {
+    url: 'mongodb://localhost/vidmood'
+  }
+};
+
+"What's all that Twitter stuff?" vidmood uses Twitter authentication to log the user in before they can share their mood. We've seen the Passport authentication module before; in a previous installment we used it with gmail accounts. This time we'll use it with Twitter.
+
+Of course, you need to get your own Twitter consumer key and consumer secret. You can get these by registering your own app on dev.twitter.com. You should be able to use the same callback URL I've used here. This is the URL that Twitter will bring users back to in order to complete the signin process.
+
+"How about the session secret?" This makes it tough to steal user sessions. Use a suitably random string of words.
+
+"What about the host setting?" We're used to testing our apps by visiting:
+
+http://localhost:3000/
+
+And you're bound to keep doing that. But because of Twitter authentication, we really need a distinct hostname instead of localhost.
+
+"Yeah, but my computer isn't vidmood-dev.justjs.com." No, but you can make your computer think it is. Just edit your /etc/hosts file and add this line at the end:
+
+127.0.0.1 vidmood-dev.justjs.com
+
+"How about the db setting?" You should be able to leave that alone, as long as you're running MongoDB on your own Mac as I've recommended for testing purposes (it's not that uncommon in production either). But you can change the host name and database name if you need to. This fancy "mongodb://" URL is understood by Mongoose, a handy ODM (Object-Document Mapper) that makes working with MongoDB a little more convenient, as we'll see in a moment.
+
+Let's turn our attention back to server.js. Now that we've set our options, we're ready to require the usual suspects... I mean modules:
+
+var express = require('express');
+var _ = require('underscore');
+var passport = require('passport');
+var fs = require('fs');
+
+These are old friends we've examined previously. Express gives us easy routes, among other features. Underscore makes coding in JavaScript generally pleasant. Passport provides authentication. And fs allows us to manipulate files.
+
+The "request" module is new, though:
+
+var request = require('request');
+
+We'll use "request" to fetch content from other websites. Specifically, we'll use it to talk to the YouTube API, in order to search for videos matching the user's mood.
+
+"Mongoose" is also new:
+
+var mongoose = require('mongoose');
+
+We've used MongoDB before. Mongoose is a wrapper for MongoDB that reduces the amount of work involved in working with MongoDB. Mongoose lets you write more natural object-oriented code based on MongoDB. We'll check out the small differences between working with Mongoose and working directly with MongoDB.
+
+We'll create the Express app object in the usual way, then add middleware to make sure we are always on the "canonical host" (the host setting in our "options" object):
+
+var app = express.createServer();
+app.use(canonicalizeHost);
+
+Here's the canonicalizeHost middleware function:
+
+// Canonicalization is good for SEO and prevents user confusion,
+// Twitter auth problems in dev, etc.
+function canonicalizeHost(req, res, next)
+{
+  if (req.headers.host !== options.host)
+  {
+    res.redirect('http://' + options.host + req.url, 301);
+  }
+  else
+  {
+    next();
+  }
+}
+
+By checking req.headers.host we can see what URL the user was trying to access. If it doesn't match the host we had in mind (note that the "host" property also includes the port number), we redirect the user to the correct host, plus the rest of the URL from the request (req.url is a bit misleadingly named; it ought to be req.path, really.)
+
+If the hosts do match, we just call next() to continue the chain of middleware. Without this call the normal handling of the request would never happen.
+
+We'll fire up support for serving static files from a "/static" subdirectory in the usual way:
+
+app.use('/static', express.static(__dirname + '/static'));
+
+And we'll add the standard middleware for accessing the parameters of POST form submissions without a fuss, so that we can write "req.body.mood" in our routes:
+
+app.use(express.bodyParser());
+
+Next we'll configure passport to give us Twitter login support. That's a nontrivial chunk of code, so we'll package it in a function:
+
+configurePassport(app);
+
+The configurePassport function is very similar to code we used previously for Google authentication. We'll take a quick look at the highlights.
+
+We'll start by requiring the passport-twitter module and registering it with Passport. We pass in our Twitter options (the consumer key and secret for our app, from dev.twitter.com) and a function that converts a Twitter profile to an object representing the user:
+
+  var TwitterStrategy = require('passport-twitter').Strategy;
+  passport.use(new TwitterStrategy(
+    options.twitter,
+    function(token, tokenSecret, profile, done) {
+      // We now have a unique id, username and full name (display name) for the user 
+      // courtesy of Twitter.
+      var user = { 'id': profile.id, 'username': profile.username, 'displayName': profile.displayName };
+      done(null, user);
+    }
+  ));
+
+Passport also needs to know how to store user objects in the session, and how to turn session data back into user objects. As before, we'll just use simple JSON:
+
+  passport.serializeUser(function(user, done) {
+    done(null, JSON.stringify(user));
+  });
+
+  passport.deserializeUser(function(json, done) {
+    var user = JSON.parse(json);
+    if (user)
+    {
+      done(null, user);
+    }
+    else
+    {
+      done(new Error("Bad JSON string in session"), null);
+    }
+  });
+
+Now we add lots and lots of middleware! Specifically, we want every request to be able to:
+
+1. Easily read and write cookies (to keep track of sessions)
+2. Store session data in general (Express session support)
+3. Log users in via Passport
+4. Remember those users are logged in as they move through the site (Passport session support).
+
+Here's the code to switch it all on:
+
+  app.use(express.cookieParser());
+  app.use(express.session({ secret: options.sessionSecret }));  
+  app.use(passport.initialize());
+  app.use(passport.session());
+
+We're ready to set up the route that actually sends people to Twitter for authentication. There's a Passport function that takes care of it; we just have to register it as the callback function for /auth/twitter.
+
+  app.get('/auth/twitter', passport.authenticate('twitter'));
+
+When the user comes back, they'll arrive at the Twitter callback URL we set when we registered our Twitter app, which is /auth/twitter/callback. So we'll need a route at that URL that finishes the authentication process and sends the user to an appropriate place on success or failure. passport.authenticate() creates a suitable callback function for us. For now we'll send the user to the home page regardless.
+
+  app.get('/auth/twitter/callback',
+    passport.authenticate('twitter', { successRedirect: '/',
+                                       failureRedirect: '/' }));
+
+We'll implement a logout route too, although we haven't bothered to add a link to it to app.html yet:
+
+  app.get('/logout', function(req, res)
+  {
+    req.logOut();
+    res.redirect('/');
+  });
+
+Keeping Your Data Clean With Mongoose
+
+Now that we can log users in, we're ready to access and store moods for them. For that, we need MongoDB. And we've chosen to use the Mongoose ODM to make working with MongoDB a little nicer and cleaner.
+
+Let's start by connecting to MongoDB. Mongoose URLs are a handy way to do this:
+
+mongoose.connect(options.db.url);
+
+Next we'll create a schema for our mood objects.
+
+"WAIT JUST A MINUTE HERE! Isn't MongoDB a schema-free database?" That's true, MongoDB doesn't force a schema on us. But when the format of your data is clearly known in advance, a schema is a helpful way to make sure you always include what needs to be included and to check that all of your properties are of the expected type. The schema can also be extended with "setter" methods that change the way data is stored without the need to change your code in every place you use it. Mongoose adds the concept of a schema to get these benefits. 
+
+For convenience, let's grab references to the Schema and ObjectId types from the Mongoose module:
+
+var Schema = mongoose.Schema, ObjectId = Schema.ObjectId;
+
+Now let's define the schema for a mood object:
+
+var MoodSchema = new Schema({
+  username    : { type: String, index: true },
+  twitterId   : { type: String, index: true },
+  name        : String,
+  youtubeId   : String,
+  thumbnail   : String,
+  date        : { type: Date, index: true },
+  width       : Number,
+  height      : Number
+});
+
+We've defined all of the properties that should exist for a mood object: the twitter username, the twitter user ID (which is unique), the "name" of the mood (like "happy" or "sad" or "verklempt"), the YouTube video ID of the video we'll associate with the mood, the URL to the YouTube thumbnail image, the "date" (date and time, in a JavaScript Date object) when the mood was shared, and the width and height of the thumbnail. Mongoose will automatically let us know if we screw up the type of any of the properties, which helped me debug the app quickly. 
+
+Some of the properties are followed by an object containing both a "type" attribute and other attributes, such as "index: true" to ensure we can quickly sort moods in chronological order. Others just have a type alone. If you don't need any other attributes, Mongoose lets you take a shortcut by just specifying the type.
+
+We're almost ready to use Mongoose. First we need to convert our Schema to a Model. A model is a constructor for new mood objects. It's also an object we can use to query the database. 
+
+We need to pass the name of the model as the first argument to mongoose.model, then the schema object:
+
+var Mood = mongoose.model('Mood', MoodSchema);
+
+Now we can rock the house! Let's skip a head a little in server.js to see how Mongoose powers the "/feed" route:
+
+app.get('/feed', function(req, res) {
+  var criteria = {};
+  if (req.query.since !== undefined)
+  {
+    criteria.date = { $gt: req.query.since };
+  }
+  if (req.query.before !== undefined)
+  {
+    criteria.date = { $lt: req.query.before };
+  }
+
+What's happening here? We're setting up a criteria object to pass to Mongoose. If the browser-side app passes a "since" parameter in the query string, we are only interested in moods shared after that time, so we use the $gt (greater than) operator. The updateFeed() function we looked at in the previous installment takes advantage of this. Similarly, if the browser passes a "before" parameter, we're only interested in moods prior to that time, which we can match with the $lt (less than) operator. 
+
+If neither parameter is present, we leave the criteria object empty so that it matches all moods. 
+
+This syntax may seem a little strange, but it is very fast because Mongoose doesn't have to parse yet another language that is not JavaScript (i.e. SQL). Also keep in mind that it is very flexible: we can combine criteria, using combinations of different operators like $gt and $lt as well as simple equality tests. For instance, if we only wanted moods for a particular twitter id, we could add that easily:
+
+criteria.twitterId = req.user.id;
+
+"But what's with $gt and $lt? Why not just '>' and '<' or something?" I'd like to know that too. It's just one of MongoDB's quirks (Mongoose didn't invent $gt and $lt). Perhaps it runs a little faster than comparing strings. Unless strings are folded in the v8 JavaScript environment. I'll have to read up on that sometime... OK, OK, more than you wanted to know!
+
+Now we're ready to find the moods we want - in the order we want. Mongoose's find() method is chainable: it returns a query object that can be modified by calling additional methods on the returned value, until finally we call exec() to get the results. This is one of those times when the code may be simpler than the explanation:
+
+  Mood.find(criteria).sort('date', -1).limit(12).exec(function(err, docs) {
+    ...
+  }
+
+The sort() method adds a sort order to the query; we can specify any property along with an order ("1" for ascending, "-1" for descending). The limit() method limits us to returning the 12 most recent moods, just to avoid overwhelming the server if justjs.com winds up on slashdot while I'm sleeping; I'll revisit this choice at some point. And the exec() method takes a callback that receives the actual mood objects.
+
+Speaking of callbacks, what do we do with the moods once we have them? We hand them to the browser in handy JSON format, of course:
+
+  function(err, docs) {
+    if (err)
+    {
+      res.status = 500;
+      return;
+    }
+    res.send(JSON.stringify(docs));
+  }
+
+Congratulations, you just implemented your first JSON API! Our JavaScript application in the browser will be able to phone up this API with jQuery's $.getJSON method in order to fetch a feed of the latest moods. No need for us to worry about how to render a mood in the browser here in the server code. All we have to do is deliver the data on time. That's an excellent way to separate concerns, and separation of concerns leads to more easily debugged and maintained code.
+
+Now we can fetch moods, but how do we post moods to the site in the first place? Let's check out the "/mood" route.
+
+The first thing we do is a quick sanity check. Did the browser submit a mood? And is the user logged in? It's the browser's responsibility to redirect to the /auth/twitter route to take care of that before trying to use this API. 
+
+app.post('/mood', function(req, res) {
+  var name = req.body.mood;
+  if (name === undefined)
+  {
+    res.status = 403;
+    return;
+  }
+  if (!req.user)
+  {
+    res.status = 403;
+    return;
+  }
+
+Now we're ready to look for a suitable YouTube video. To do that, we'll need to talk to YouTube's search API. 
+
+The good news is that YouTube has a JSON API for us to consume. The bad news is that their JSON API responses are a lot wordier than they need to be. In fact, they seem to be directly equivalent to the overly fancy responses one tends to get from an XML API. But we can parse our way through it. All we need to do is fetch the feed with the request module, which consists of one simple and super-useful function for fetching URLs, then parse the JSON response with JSON.parse() and peek at the properties of the object we get back to locate the YouTube ID and thumbnail URL we want.
+
+The request() function takes two parameters: an object specifying what we want to fetch, and a callback function to be invoked with the content that was fetched. 
+
+Here's the object we'll pass as the first parameter to fetch the feed. The url property is YouTube's public API for searching for videos. The qs property ("query string") contains the properties we'd like to pass as part of the query string of the URL (the part after the ?). request() is nice enough to take care of that for us:
+
+  var params = { 
+    url: 'http://gdata.youtube.com/feeds/api/videos', 
+    qs: { q: name, alt: 'json', format: 5 } 
+  };
+
+Two of the query string properties, "q" and "alt," are well-documented. The third, "format," is less well-documented but very handy. In particular, "format: 5" returns only videos that can be embedded on non-YouTube sides like vidmood. That saves us from displaying a lot of unhappy video players.
+
+By the way, you can try the resulting URL out in the browser directly. Just visit:
+
+http://gdata.youtube.com/feeds/api/videos?q=swanky&alt=json&format=5
+
+You'll get back a JSON response with lots and LOTS of information, but it's not formatted in a particularly human-friendly way. jsonprettyprint.com offers a convenient way to view a JSON response with attractive spacing.
+
+Let's move on to the second argument to request(), which is our callback function:
+
+	request(params, function (error, response, body) {
+    if (error || (response.statusCode !== 200)) {
+      res.status = 500;
+      return;
+    }
+    var data = JSON.parse(body);
+    if (!data.feed.entry)
+    {
+      res.status = 500;
+      return;
+    }
+
+request() passes us all the information we might need: the error (if any), a response object (from which we can read the statusCode and contentType if we wish), and of course the body of the response. If we fetched a webpage with request(), the body parameter would contain the HTML for the page. For a JSON API call, it contains the JSON-encoded data we asked for.
+
+Our callback function starts by making sure there was no error and that the status code was 200 (the HTTP status code for "OK"). Then we use JSON.parse to convert the JSON string to a JavaScript object so we can rifle through its properties.
+
+Before we start parsing through the object, we'll carry out one more sanity check: is there a data.feed.entry property? If we hit the video search API too often over a short period of time, YouTube starts returning responses with no entries as part of their rate limit policy. We should recognize this condition and return a 500 error to the browser, rather than crashing in an attempt to look at properties that aren't there.
+
+Now we're ready to pick a video. The returned feed actually contains up to 50 results. Since it would be boring if everyone got the #1 video matching a search for "happy," we'll pick one of the results at random. (Notice that data.feed.entry is an array of multiple entries. The singular name is one of those XML-like quirks of YouTube's API.)
+
+    var entries = data.feed.entry;
+    var count = data.feed.entry.length;
+    var i = Math.floor(Math.random() * count);
+
+You're probably familiar with Math.random(), which returns a random fractional number between 0 and 1 (but never exactly 1). By multiplying that number by the total number of entries  and then calling Math.floor() to round down, we obtain a number between 0 and (count - 1), inclusive. This is a very common JavaScript snippet. If we used it again, it'd be worth tucking it into a dice_roll() function.
+
+Our next task is to pull out the YouTube ID in the response. You would think that data.feed.entry[i].id would contain the id, but it's actually data.feed.entry[i].id.$t. Just another charming but harmless XML-like quirk of YouTube's JSON APIs.
+
+You'd also think id.$t would just contain a YouTube ID string, like dQw4w9WgXcQ. We've all seen these in YouTube URLs and embed codes. But id.$t actually contains a feed URL that ends with the ID. Why? Who knows! But we can use a regular expression to match a sequence of letters, digits, underscores and dashes (the characters that are legal in YouTube IDs) coming at the end of the string. The "$" in the regular expression matches the end of the string:
+
+    var match = /[a-zA-Z0-9_-]+$/.exec(entries[i].id.$t);
+    if (!match)
+    {
+      res.status = 500;
+      return;
+    }
+    var id = match[0];
+
+Now we've got the id string. All we need to finish the job is the thumbnail URL. (Recall that our browser-side JavaScript app uses the thumbnail rather than an actual player until the user actually clicks the "play" button.)
+
+Every YouTube video has at least one thumbnail. So we'll just reach into the media$group property and pull out the first entry in the media$thumbnail array (again with the creative property names, YouTube!)
+
+    var thumbnail = entries[i].media$group.media$thumbnail[0];
+
+The width, height and URL of the thumbnail turn out to be in properties called... width, height, and url. And we don't have to type any dollar signs either! I can see the light at the end of the tunnel.
+
+Let's create a Mood object to save with Mongoose:
+
+    var mood = new Mood(
+      { 
+        'username': req.user.username, 
+        'twitterId': req.user.id, 
+        'name': name, 
+        'date': new Date(), 
+        'youtubeId': id, 
+        'thumbnail': thumbnail.url, 
+        'width': thumbnail.width, 
+        'height': thumbnail.height
+      });
+
+(We save both the Twitter username and the Twitter id. Saving the username is convenient for display, while saving the id is guaranteed to find that user's moods again someday if they change their username. We can initialize the date property to the current date and time simply by creating a new Date object with no parameters.)
+
+Great, let's save it to the database and give the browser the good news (assuming things go well):
+
+    mood.save(function(err, doc) {
+      if (err)
+      {
+        res.status = 500;
+        return;
+      }
+      res.status = 200;
+      res.send(JSON.stringify(mood));
+    });
+
+The Mongoose save() method takes a callback to be invoked as soon as the object has been saved. (Actually, since we didn't specify the strict option, MongoDB assumes the save will work out fine and returns right away for a small performance boost.)
+
+The first argument, as usual for callbacks, receives any error that may have occurred. The second receives the MongoDB object that was saved. So we'll call JSON.stringify(mood) to turn that into a JSON string, then send it to the browser. 
+
+Mischief managed! We can save moods to the MongoDB database, with suitable YouTube videos attached, and let the browser know the outcome.
+
+It's all over but the shouting. But there's one more important route: the browser-side JavaScript application itself! We do have to deliver the one page that makes up our one-page app at some point, you know. 
+
+We took a look at this code in the previous installment, so a quick recap will do:
+
+var homeTemplate;
+
+app.get('/', function(req, res) {
+  if (!homeTemplate)
+  {
+    homeTemplate = fs.readFileSync(__dirname + '/templates/app.html', 'utf8');
+  }
+  res.contentType('text/html');
+  res.send(homeTemplate.replace('%USER%', JSON.stringify((req.user ? req.user : null) )));
+});
+
+Our "/" route delivers the home page, aka the only page, aka the single-page JavaScript application. That page is delivered from the file /templates/app.html. We fetch it from the filesystem with the fs.readFileSync() method - a rare case of not doing something asynchronously in Node, but since we only fetch it the first time it is asked for, there's no performance impact.
+
+Once we've fetched the content, we set the appropriate content type and send the HTML... after first replacing the placeholder "%USER%" with a JSON object containing information about the currently logged-in user. Logging the user in requires redirecting them off to Twitter-land, so when they come back from Twitter and load the app again it's a good opportunity to just stuff that data right into the JavaScript code, as in this snippet from app.html:
+
+      var user = %USER%;
+
+It's not uncommon to take this sort of thing further. We could pass in the initial feed in the same way rather than using a separate HTTP request. In production, once the load started going up and the system administrators started getting nervous, we probably would (although at the speed of Node, it might take a while for anyone to become overly concerned). For now it's smarter to keep things simple and understandable and fetch the feed in one consistent way.
+
+What's left? Just listening on the appropriate port! As usual we listen on port 3000 by default. However, we'll also check for a data/port file. In production, that file is created by stagecoach, a handy open-source tool we built at P'unk Avenue. Both at work and for justjs.com, I use Stagecoach to run many Node apps on a single Linux VPS or dedicated server. Stagecoach assigns ports to each one automatically and allows each app to respond under a different hostname without a clunky port number in the URL. That's accomplished by a proxy server based on Nodejitsu's great node-http-proxy module. stagecoach also provides deployment scripts and optional Ubuntu "upstart" scripts to start up and shut down the entire collection of apps automatically. We'll check out stagecoach in detail in a future installment.
+
+Atomic Turbines to Speed!
+
+That's it - we've covered both the browser side and the server side of the vidmood app! You can launch it just as you launched the blog examples in previous installments. Make sure you added vidmood-dev.justjs.com to your /etc/hosts file so that you can visit http://vidmood-dev.justjs.com:3000/ rather than http://localhost:3000/. That's especially important when logging in with Twitter to share your mood. Also make sure you registered a Twitter application for your tests as described above.
+
+Next up I'll take a look at deploying Node applications with stagecoach. Then we'll examine the benefits of rewriting the browser-side vidmood application in Bootstrap. Or maybe AngularJS. It depends on my mood.
