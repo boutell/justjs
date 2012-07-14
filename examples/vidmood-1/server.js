@@ -23,9 +23,7 @@ var MoodSchema = new Schema({
   name        : String,
   youtubeId   : String,
   thumbnail   : String,
-  date        : { type: Date, index: true },
-  width       : Number,
-  height      : Number
+  date        : { type: Date, index: true }
 });
 
 var Mood = mongoose.model('Mood', MoodSchema);
@@ -58,7 +56,7 @@ app.post('/mood', function(req, res) {
   }
   var params = { 
       url: 'http://gdata.youtube.com/feeds/api/videos', 
-      qs: { q: name, alt: 'json', format: 5 } 
+      qs: { q: name, alt: 'jsonc', format: 5, v: 2 } 
     };
 	request(params, function (error, response, body) {
     if (error || (response.statusCode !== 200)) {
@@ -66,23 +64,23 @@ app.post('/mood', function(req, res) {
       return;
     }
     var data = JSON.parse(body);
-    if (!data.feed.entry)
+    if ((data.error) || (!data.data))
     {
       // Probably hitting the server too often
       res.status = 500;
       return;
     }
-    var entries = data.feed.entry;
-    var count = data.feed.entry.length;
-    var i = Math.floor(Math.random() * count);
-    var match = /[a-zA-Z0-9_-]+$/.exec(entries[i].id.$t);
-    if (!match)
+    var entries = data.data.items;
+    var count = entries.length;
+    if (!count)
     {
-      res.status = 500;
+      // No results for this mood (pretty unlikely)
+      res.status = 404;
       return;
     }
-    var id = match[0];
-    var thumbnail = entries[i].media$group.media$thumbnail[0];
+    var i = Math.floor(Math.random() * count);
+    var id = entries[i].id;
+    var thumbnail = entries[i].thumbnail.sqDefault;
     var mood = new Mood(
       { 
         'username': req.user.username, 
@@ -90,9 +88,7 @@ app.post('/mood', function(req, res) {
         'name': name, 
         'date': new Date(), 
         'youtubeId': id, 
-        'thumbnail': thumbnail.url, 
-        'width': thumbnail.width, 
-        'height': thumbnail.height
+        'thumbnail': thumbnail, 
       });
     mood.save(function(err, doc) {
       if (err)
