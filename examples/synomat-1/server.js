@@ -14,7 +14,7 @@ function loadThesaurus()
 {
   console.log("Loading thesaurus...");
   var thesaurus = {};
-  var lines = fs.readFileSync('mthesaur.txt').toString().split("\n");
+  var lines = fs.readFileSync(__dirname + '/mthesaur.txt').toString().split("\n");
   _.each(lines, function(line) {
     var words = line.split(',');
     if (words.length)

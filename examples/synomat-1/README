@@ -1,6 +1,10 @@
 synomat is a Twitter thesaurus bot. You tweet words to it, and it tweets back a list of synonyms.
 
-This app contains Grady Ward's "moby thesaurus," which he released into the public domain in 1996.
+This app requires Grady Ward's "moby thesaurus," which he released into the public domain in 1996.
+
+You can also find it here:
+
+http://www.gutenberg.org/ebooks/3202
 
 Since the thesaurus is public domain, no attribution is required, but it sure was nice of him.
 
