@@ -1,0 +1,37 @@
+@synomat is a Twitter-powered thesaurus. It's easy to play with: tweet a word to @synomat and she tweets back a list of synonyms. Simple enough, but how does it work? node.js and the ntwitter module to the rescue!
+
+It might surprise you to learn that not every node.js app is a website. Fundamentally, node.js is not a webserver, although it contains modules that are stupendously good at it. At its core, Node is an engine for doing work asynchronously as the need arises, responding to events as they happen. Node is good for pretty much anything that meets that description. And running a Twitter bot - an automated Twitter account that provides helpful services to the public - definitely meets that description.
+
+ntwitter is a Node module that provides access to the Twitter API. That includes lots of things: logging in, tweeting, searching, and monitoring "streams" of tweets by particular users or groups of users. That last feature is really, really great for writing automated Twitter clients or "bots."
+Rather than using the http module (either directly or indirectly via Express), @synomat uses ntwitter as its main point of departure.
+
+Of course, it takes one more thing to make a Twitter thesaurus bot: a decent thesaurus! For that we should thank Grady Ward, who released a public domain thesaurus back in 1996.
+
+Ward's thesaurus, aka the "Moby thesaurus," is as simple as they come. Each line contains a comma-separated list of words. The first word is the "base word" the user is looking up; the rest are synonyms. And as it turns out, it's very easy to parse this format with Node.
+
+Let's dive into server.js and see how it all works!
+
+We'll start out by importing modules. You should be familiar with all of these by now, except for ntwitter. We also require an options.js file which will contain Twitter credentials for both a Twitter app - our bot must be registered as a Twitter application - and a Twitter user:
+
+var _ = require('underscore');
+var options = require('./options.js');
+var ntwitter = require('ntwitter');
+var fs = require('fs');
+
+Let's look at options.js. This file contains a consumer_key and consumer_secret, which work just like those in my vidmood application, so check out that previous installment if you are unfamiliar with the process of registering a Twitter app on dev.twitter.com.
+
+The file also contains an access_token_key (which Twitter refers to as an "access token") and an access_token_secret. These grant the application access to a specific user's account. In the vidmood application, users grant permission to the vidmood app manually, and then the access token and secret come into being without our intervention. But for a simple app like @synomat that will be tweeting on behalf of our own Twitter account, we can skip that manual process and generate the token and secret directly on dev.twitter.com. To do that, first register your app, then click on the "details" tab and scroll down. You'll see a "create my access token" button. Click that, then you'll be able to copy and paste the access token and secret. If you don't see them right away, try clicking over to the "setting" tab, then back to "details." (Twitter does claim there may be some delay before the information becomes available.)
+
+Here's a full-fledged options.js file. Naturally for your own bot you would change the username as well as the credentials:
+
+module.exports = {
+  twitter: {
+    username: 'synomat',
+    consumer_key: 'xxxx',
+    consumer_secret: 'xxxx',
+    access_token_key: 'xxxx',
+    access_token_secret: 'xxxx'
+  }
+};
+
+"Why can't I just put a username and password in there and be done with it?" Twitter requires that OpenAuth be used by all clients. Yes, it's a pain for simple apps like this that don't act on behalf of third parties, but I don't make the rules.

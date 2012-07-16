@@ -65,7 +65,7 @@ function bot()
         var result = data.text.match(/ (\w+)\s*$/);
         if (result)
         {
-          var word = result[1];
+          var word = result[1].toLowerCase();
           if (_.has(thesaurus, word))
           {
             reply(thesaurus[word]);
