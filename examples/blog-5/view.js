@@ -31,11 +31,8 @@ module.exports = view = {
       data = {};
     }
     // Defaulting the crumbs slot to an empty array is helpful because
-    // it saves having an explicit default for it in every partial.
-    // Take care not to crush anything already in data.slots while still
-    // adding our defaults if they are absent
-    _.defaults(data, { slots: {} });
-    _.defaults(data.slots, { crumbs: [], title: '', bodyClass: '' });
+    // it saves having an explicit default for it in every partial
+    _.defaults(data, { slots: { crumbs: [], title: '', bodyClass: '' } });
     data.slots.body = view.partial(template, data);
     // If a partial has already set the 'layout' slot, respect that instead
     // of the default layout name

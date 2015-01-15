@@ -1,16 +1,21 @@
 var _ = require('underscore');
 var express = require('express');
-
+var bodyParser = require('body-parser');
+  
 module.exports = {
   init: function(context, callback) {
     // Create an Express app object to add routes to and add
     // it to the context
-    var app = context.app = express.createServer();
-
+    var app = context.app =  require("express")(); 
     // The express "body parser" gives us the parameters of a 
     // POST request is a convenient req.body object
-    app.use(express.bodyParser());
-
+    
+    
+    //app.use(bodyParser.urlencoded());
+    app.use(bodyParser.json());    
+    app.use(bodyParser.urlencoded({
+      extended: true
+    }));
     // Deliver a list of posts when we see just '/'
     app.get('/', function(req, res) {
       context.db.posts.findAll(function(err, posts) {
@@ -60,8 +65,15 @@ module.exports = {
     // for /new (note this is enough to distinguish it
     // from the route above)
     app.post('/new', function(req, res) {
+
+      //var post = _.pick(req.body, 'title', 'body');
+      var post_title = req.body;
+
+      console.log(post);
       var post = _.pick(req.body, 'title', 'body');
       context.db.posts.insert(post, function(err, post) {
+        //console.log("error");
+        //console.log(post);
         if (err)
         {
           // Probably a duplicate slug, ask the user to try again
@@ -71,7 +83,9 @@ module.exports = {
         }
         else
         {
-          res.redirect('/posts/' + post.slug);
+
+          //res.redirect('/posts/' + post.slug);
+          res.redirect('/');
         }
       });
     });
@@ -104,7 +118,8 @@ module.exports = {
 
     function notFound(res)
     {
-      res.send('<h1>Page not found.</h1>', 404);
+      
+      res.status(404).send('<h1>Page not found.</h1>');
     }
 
     // We didn't have to delegate to anything time-consuming, so
@@ -112,4 +127,3 @@ module.exports = {
     callback();
   }
 };
-

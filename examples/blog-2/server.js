@@ -25,7 +25,9 @@ var posts = {
 };
 
 // Create an Express app object to add routes to
-var app = require('express').createServer();
+
+
+var app = require("express")(); 
 
 // Deliver a list of posts when we see just '/'
 app.get('/', function(req, res) {

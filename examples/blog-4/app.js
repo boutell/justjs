@@ -1,19 +1,29 @@
 var _ = require('underscore');
 var express = require('express');
+var bodyParser = require('body-parser');
 var view;
 
+
+  
 module.exports = {
   init: function(context, callback) {
     // Create an Express app object to add routes to and add
     // it to the context
-    var app = context.app = express.createServer();
-
+    var app = context.app =  require("express")(); 
     // The express "body parser" gives us the parameters of a 
     // POST request is a convenient req.body object
-    app.use(express.bodyParser());
+    
+    
+    //app.use(bodyParser.urlencoded());
+    app.use(bodyParser.json());    
+    app.use(bodyParser.urlencoded({
+      extended: true
+    }));
+
 
     // Get the view module from the context
     view = context.view;
+
 
     // Serve static files (such as CSS and js) in this folder
     app.use('/static', express.static(__dirname + '/static'));
@@ -26,8 +36,8 @@ module.exports = {
           notFound(res);
           return;
         }
-
-        res.send(view.page('index', {posts: posts}));
+          res.send(view.page('index', {posts: posts}));
+   
       });
     });
 
@@ -39,8 +49,7 @@ module.exports = {
           notFound(res);
           return;
         }
-        res.send(view.page('post', {post: post}));
-      });
+        res.send(view.page('post', {post: post}));      });
     });
 
     // Deliver a "new post" form when we see /new.
@@ -54,8 +63,15 @@ module.exports = {
     // for /new (note this is enough to distinguish it
     // from the route above)
     app.post('/new', function(req, res) {
+
+      //var post = _.pick(req.body, 'title', 'body');
+      var post_title = req.body;
+
+      console.log(post);
       var post = _.pick(req.body, 'title', 'body');
       context.db.posts.insert(post, function(err, post) {
+        //console.log("error");
+        //console.log(post);
         if (err)
         {
           // Probably a duplicate slug, ask the user to try again
@@ -65,6 +81,8 @@ module.exports = {
         }
         else
         {
+
+          //res.redirect('/posts/' + post.slug);
           res.redirect('/posts/' + post.slug);
         }
       });
@@ -74,6 +92,7 @@ module.exports = {
     function newPost(res, message)
     {
       res.send(view.page('new', { 'message': message }));
+      
     }
 
     app.get('*', function(req, res) {
@@ -86,7 +105,8 @@ module.exports = {
 
     function notFound(res)
     {
-      res.send('<h1>Page not found.</h1>', 404);
+      
+      res.status(404).send('<h1>Page not found.</h1>');
     }
 
     // We didn't have to delegate to anything time-consuming, so
@@ -94,4 +114,3 @@ module.exports = {
     callback();
   }
 };
-

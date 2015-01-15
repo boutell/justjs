@@ -19,9 +19,10 @@ module.exports = db = {
       new mongo.Server(settings.db.host, settings.db.port, {}), 
       {});
 
-    // Store it in the context for use by other mongodb-powered code outside
+     // Store it in the context for use by other mongodb-powered code outside
     // the model layer of our app, such as the connect-mongodb session storage handler
     context.mongoConnection = dbConnection;
+
 
     // db.open doesn't happen right away; we pass a callback function
     // to know when it succeeds
@@ -87,19 +88,22 @@ module.exports = db = {
     // support in slugs
 
     // Everything not a letter or number becomes a dash
-    s = s.replace(/[^A-Za-z0-9]/g, '-');
+  
+  /*  s = s.replace(/[^A-Za-z0-9]/g, '-');
     // Consecutive dashes become one dash
     s = s.replace(/\-+/g, '-');
     // Leading dashes go away
     s = s.replace(/^\-/, '');
     // Trailing dashes go away
     s = s.replace(/\-$/, '');
+
     // If the string is empty, supply something so that routes still match
     if (!s.length)
     {
       s = 'none';
     }
-    return s.toLowerCase();
+
+    */
+    return s;
   }
 };
-

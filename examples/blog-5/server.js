@@ -20,13 +20,15 @@ function setupDb(callback)
   context.db.init(context, callback);
 }
 
-function setupView(callback)
-{
+
+function setupView(callback){
   // Create the view object
   context.view = require('./view.js');
   // Serve templates from this folder
   context.view.init({viewDir: __dirname + '/views'}, callback);
 }
+
+
 
 function setupApp(callback)
 {
