@@ -1,0 +1,56 @@
+info it worked if it ends with ok
+verbose cli [ 'node',
+verbose cli   '/usr/local/bin/npm',
+verbose cli   'install',
+verbose cli   'git://github.com/HumbleSoftware/Flotr2.git' ]
+info using npm@1.1.21
+info using node@v0.6.17
+verbose config file /Users/boutell/.npmrc
+verbose config file /usr/local/etc/npmrc
+verbose config file /usr/local/lib/node_modules/npm/npmrc
+verbose caching /Users/boutell/Sites/justjs/examples/shrink-1/node_modules/express/package.json
+verbose caching /Users/boutell/Sites/justjs/examples/shrink-1/node_modules/mongoose/package.json
+verbose caching /Users/boutell/Sites/justjs/examples/shrink-1/node_modules/passport/package.json
+verbose caching /Users/boutell/Sites/justjs/examples/shrink-1/node_modules/passport-twitter/package.json
+verbose caching /Users/boutell/Sites/justjs/examples/shrink-1/node_modules/request/package.json
+verbose caching /Users/boutell/Sites/justjs/examples/shrink-1/node_modules/underscore/package.json
+verbose cache add [ 'git://github.com/HumbleSoftware/Flotr2.git', null ]
+silly cache add: name, spec, args [ undefined,
+silly cache add: name, spec, args   'git://github.com/HumbleSoftware/Flotr2.git',
+silly cache add: name, spec, args   [ 'git://github.com/HumbleSoftware/Flotr2.git', null ] ]
+verbose parsed url { protocol: 'git:',
+verbose parsed url   slashes: true,
+verbose parsed url   host: 'github.com',
+verbose parsed url   hostname: 'github.com',
+verbose parsed url   href: 'git://github.com/HumbleSoftware/Flotr2.git',
+verbose parsed url   pathname: '/HumbleSoftware/Flotr2.git',
+verbose parsed url   path: '/HumbleSoftware/Flotr2.git' }
+verbose addRemoteGit [ 'git://github.com/HumbleSoftware/Flotr2.git', 'master' ]
+silly exec git "clone" "git://github.com/HumbleSoftware/Flotr2.git" "/var/folders/2m/z8_zgznx3sxfz5k57jz4z0yr0000gn/T/npm-1343614897842/1343614897842-0.969696392538026"
+silly spawning [ 'git',
+silly spawning   [ 'clone',
+silly spawning     'git://github.com/HumbleSoftware/Flotr2.git',
+silly spawning     '/var/folders/2m/z8_zgznx3sxfz5k57jz4z0yr0000gn/T/npm-1343614897842/1343614897842-0.969696392538026' ],
+silly spawning   null ]
+verbose git clone git://github.com/HumbleSoftware/Flotr2.git Cloning into '/var/folders/2m/z8_zgznx3sxfz5k57jz4z0yr0000gn/T/npm-1343614897842/1343614897842-0.969696392538026'...
+silly exec git "checkout" "master"
+silly spawning [ 'git',
+silly spawning   [ 'checkout', 'master' ],
+silly spawning   '/var/folders/2m/z8_zgznx3sxfz5k57jz4z0yr0000gn/T/npm-1343614897842/1343614897842-0.969696392538026' ]
+verbose git checkout master Already on 'master'
+ERR! Error: ENOENT, open '/var/folders/2m/z8_zgznx3sxfz5k57jz4z0yr0000gn/T/npm-1343614897842/1343614897842-0.969696392538026/package.json'
+ERR! You may report this log at:
+ERR!     <http://github.com/isaacs/npm/issues>
+ERR! or email it to:
+ERR!     <npm-@googlegroups.com>
+ERR! 
+ERR! System Darwin 11.4.0
+ERR! command "node" "/usr/local/bin/npm" "install" "git://github.com/HumbleSoftware/Flotr2.git"
+ERR! cwd /Users/boutell/Sites/justjs/examples/shrink-1
+ERR! node -v v0.6.17
+ERR! npm -v 1.1.21
+ERR! path /var/folders/2m/z8_zgznx3sxfz5k57jz4z0yr0000gn/T/npm-1343614897842/1343614897842-0.969696392538026/package.json
+ERR! code ENOENT
+ERR! message ENOENT, open '/var/folders/2m/z8_zgznx3sxfz5k57jz4z0yr0000gn/T/npm-1343614897842/1343614897842-0.969696392538026/package.json'
+ERR! errno {}
+verbose exit [ 1, true ]

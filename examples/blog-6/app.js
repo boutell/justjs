@@ -156,7 +156,7 @@ module.exports = {
       // It's up to us to tell Passport how to store the current user in the session, and how to take
       // session data and get back a user object. We could store just an id in the session and go back
       // and forth to the complete user object via MySQL or MongoDB lookups, but since the user object
-      // is small, we'll save a round trip to the database by storign the user
+      // is small, we'll save a round trip to the database by storing the user
       // information directly in the session in JSON string format.
 
       passport.serializeUser(function(user, done) {

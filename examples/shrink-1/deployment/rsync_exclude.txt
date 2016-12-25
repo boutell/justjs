@@ -5,6 +5,3 @@
 data
 .git
 .gitignore
-config-local.js
-# Let stagecoach run the dependencies script instead
-node_modules

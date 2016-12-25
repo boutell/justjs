@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html>
+  <head>
+  	<title>shrink</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <script type="text/javascript" src="/static/js/jquery-1.7.2.min.js"></script>
+    <script type="text/javascript" src="/static/js/underscore-min.js"></script>
+    <script type="text/javascript" src="/static/js/jquery.cookie.js"></script>
+    <script type="text/javascript" src="/static/js/Flotr2/flotr2.min.js"></script>
+    <link href="/static/bootstrap/css/bootstrap.css" rel="stylesheet" />
+    <link href="/static/bootstrap/css/bootstrap-responsive.css" rel="stylesheet" />
+    <style type="text/css">
+      /* Without this (borrowed from one of the bootstrap samples) the bootstrap navbar
+        clobbers the top of the content. */
+      body
+      {
+        padding-top: 60px;
+      }
+      .login-required
+      {
+        margin-left: 20px;
+        display: none;
+      }
+      .result
+      {
+        display: none;
+      }
+      .hide
+      {
+        display: none;
+      }
+      .graph
+      {
+        width: 100%;
+        height: 250px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="navbar navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <a class="brand" href="/">shrink</a>
+        </div>
+      </div>
+    </div>
+    <div class="container">
+      <div class="row">
+        <div class="span12">
+          <form class="weight-form" action="/" method="GET">
+            <fieldset class="height-field">
+              <label for="height-feet">How tall are you?</label>
+              <input required="required" class="height-feet" maxlength="1" size="1" /> feet
+              <input required="required" class="height-inches" maxlength="2" size="2" /> inches
+            </fieldset>
+            <fieldset class="weight-field">
+              <label for="weight">How much do you weigh?</label>
+              <input required="required" class="weight" name="weight" maxlength="20" size="20" /> lbs
+            </fieldset>
+            <fieldset class="actions">
+              <input class="submit" type="submit" value="Shrink!" />
+            </fieldset>
+          </form>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="span12 hide">
+          <p>Your Body Mass Index is <span class="bmi">N</span></p>
+        </div>
+      </div>
+      <div class="row">
+        <div class="span12 results">
+          <div class="result healthy-weight">
+            <h2>Congratulations</h2>
+            <h3>You are already at a healthy weight for your height!</h3>
+            <p>According to the FDA's BMI calculator, your current weight is healthy for your height.</p>
+          </div>
+          <div class="result plan">
+            <h2>Your Weight Loss Plan</h2>
+            <p>Today you weigh <span class="weight">X</span> pounds.
+            <p>A healthy weight goal for your height is <span class="goal-weight">Y</span> pounds.</p>
+            <p>We want you to be safe and not miserable, so let's play it smart and aim to lose about a pound and a half each week. We think that will take you about <span class="goal-weeks">Z</span> weeks.</p>
+            <div class="graph">
+            </div>
+            <table class="table">
+            </table>
+          </div>
+        </div>
+      </div>
+
+    <script type="text/javascript">
+      var user = %USER%;
+
+      // Warn about:
+      // Kids
+      // Pregnant women (duh)
+      // Trusting amateurs like me in general
+      $(function() {
+        function computeBmi(weight, height)
+        {
+          console.log(weight + ',' + height);
+          // Per FDA working group report: http://www.fda.gov/Food/LabelingNutrition/ReportsResearch/ucm081857.htm
+          var result = (weight / (height * height)) * 703;
+          return nearestTenth(result);
+        }
+
+        function nearestTenth(n)
+        {
+          return Math.round(n * 10.0) / 10.0;
+        }
+
+        function computeGoalWeight(height)
+        {
+          // bmi = (weight / (height * height)) * 703;
+          // bmi * height * height = weight * 703;
+          // (bmi * height * height) / 703 = weight;
+          var goalBmi =  23; // higher side of normal BMI
+          var weight = (goalBmi * height * height) / 703;
+          return Math.round(weight);
+        }
+
+        // nutrition.gov discussed losing 1-2 pounds per week
+        // as a reasonable goal http://www.nutrition.gov/weight-management/strategies-success/interested-losing-weight
+        function computeGoalWeeks(weight, goalWeight)
+        {
+          return Math.ceil((weight - goalWeight) / 1.5);
+        }
+
+        if (!user)
+        {
+          $('.login-required').show();
+        }
+
+        $('.weight-form').submit(function(event) {
+          event.preventDefault();
+          var weight = $('.weight').val();
+          var height = $('.height-feet').val() * 12 + ($('.height-inches').val() - 0);
+          var bmi = computeBmi(weight, height);
+          $('.bmi').text(bmi);
+          $('.bmi').show();
+          var goalWeight = computeGoalWeight(height);
+          var goalWeeks = computeGoalWeeks(weight, goalWeight);
+          if (goalWeeks <= 0)
+          {
+            showResult('.healthy-weight');
+          }
+          else
+          {
+            $('.weight').text(weight);
+            $('.goal-weight').text(goalWeight);
+            $('.goal-weeks').text(goalWeeks);
+            showResult('.plan');
+            console.log('Showing plan');
+          }
+
+          function showResult(c)
+          {
+            $('.results .result').hide();
+            $(c).show();
+
+            var graphDiv = $('.graph')[0];
+
+            var date = new Date();
+
+            var data = [];
+            for (i = 0; (i <= goalWeeks); i++)
+            {
+              data.push([date.getTime(), weight - ((weight - goalWeight) * i / goalWeeks)]);
+              date.setDate(date.getDate() + 7);
+            }
+            options = {
+              xaxis: {
+                mode: 'time',
+                timeFormat: '%m/%d',
+                noTicks: goalWeeks
+              }, 
+              yaxis: {
+                minorTickFreq: 10
+              }
+            };
+
+            var graph = Flotr.draw(
+              graphDiv,
+              [ data ],
+              options);
+
+            var date = new Date();
+            $('.table').html('<tr><th>Date</th><td>Goal Weight</td></tr>');
+            for (i = 0; (i <= goalWeeks * 7); i++)
+            {
+              function addDay(date, weight)
+              {
+                $('.table').append($('<tr><th>' + (date.getMonth() + 1) + '/' + date.getDate() + '</th><td>' + Math.round(weight) + '</td>'));
+              }
+              addDay(date, weight - ((weight - goalWeight) * i / (goalWeeks * 7)));
+              date.setDate(date.getDate() + 1);
+            }
+          }
+
+          return false;
+        });
+      });
+    </script> 
+
+  </body>
+</html>

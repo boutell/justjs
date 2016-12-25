@@ -7,6 +7,10 @@
 				<label>Title</label>
 				<input name="title" class="post-title" value="<%- post.title %>"/>
 			</fieldset>
+      <fieldset>
+				<label>Embed code</label>
+				<textarea name="embed"><%= post.embed %></textarea> class="embed-field"></textarea>
+			</fieldset>
 			<fieldset>
 				<label>Body</label>
 				<textarea name="body" class="post-body rich-text-editor"><%- post.body %></textarea>

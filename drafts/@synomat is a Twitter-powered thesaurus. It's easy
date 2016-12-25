@@ -18,6 +18,10 @@ var options = require('./options.js');
 var ntwitter = require('ntwitter');
 var fs = require('fs');
 
+If you're not checking out the code from github, don't forget to install the ntwitter module with npm:
+
+npm install ntwitter
+
 Let's look at options.js. This file contains a consumer_key and consumer_secret, which work just like those in my vidmood application, so check out that previous installment if you are unfamiliar with the process of registering a Twitter app on dev.twitter.com.
 
 The file also contains an access_token_key (which Twitter refers to as an "access token") and an access_token_secret. These grant the application access to a specific user's account. In the vidmood application, users grant permission to the vidmood app manually, and then the access token and secret come into being without our intervention. But for a simple app like @synomat that will be tweeting on behalf of our own Twitter account, we can skip that manual process and generate the token and secret directly on dev.twitter.com. To do that, first register your app, then click on the "details" tab and scroll down. You'll see a "create my access token" button. Click that, then you'll be able to copy and paste the access token and secret. If you don't see them right away, try clicking over to the "setting" tab, then back to "details." (Twitter does claim there may be some delay before the information becomes available.)
@@ -34,4 +38,66 @@ module.exports = {
   }
 };
 
-"Why can't I just put a username and password in there and be done with it?" Twitter requires that OpenAuth be used by all clients. Yes, it's a pain for simple apps like this that don't act on behalf of third parties, but I don't make the rules.
+"Why can't I just put a username and password in there and be done with it?" Twitter requires that OpenAuth be used by all clients. Yes, it's a pain for simple apps like this that don't act on behalf of third parties, but I don't make the rules. Fortunately the ntwitter module does the tough bits for us. We just supply the credentials.
+
+Now we're ready to take advantage of the ntwitter module. It's possible to interact with Twitter on behalf of more than one user or app, so rather than use the ntwitter module directly, we use it to construct a new object representing this particular user and app:
+
+var tweeter = new ntwitter(options.twitter);
+
+Now let's stash our bot's Twitter username in a global variable where we can use it more conveniently:
+
+var me = options.twitter.username;
+
+Our next steps are to load the thesaurus file, then start up the Twitter bot. I've abstracted these tasks to functions to make the code easier to read:
+
+var thesaurus = loadThesaurus();
+bot();
+
+Loading the thesaurus is easy. Since the bot hasn't started up yet, it's acceptable for us to read the whole file with a synchronous call, even though that takes some time. We can split it into lines with JavaScript's familiar split() method, then iterate over those lines with Underscore's each():
+
+function loadThesaurus()
+{
+  console.log("Loading thesaurus...");
+  var thesaurus = {};
+  var lines = fs.readFileSync(__dirname + '/mthesaur.txt').toString().split("\n");
+  _.each(lines, function(line) {
+    // Process each line
+  });
+  console.log("Thesaurus loaded.");
+  return thesaurus;
+}
+
+Of course, we also need to split up each line of the thesaurus file. The words in that file are separated by commas, so we'll split each line at the commas:
+
+    var words = line.split(',');
+
+We'll ignore empty lines by checking for an empty array. If the array isn't empty, we know the first word is the term the rest are synonyms for. Pop the list of words, nicely punctuated, into our thesaurus object with the term as the name of the property, and we're ready to go... right?
+
+if (words.length) {
+  var term = words[0];
+  thesaurus[term] = words.join(', ');
+}
+
+Well... almost. The thesaurus contains lots of synonyms for most words. And tweets can only be 140 characters long. We could respond with more than one tweet, but it's not really in the Twitter spirit.
+
+The laziest solution? Join the words up again, separated the way we'd like them to be punctuated when we tweet them out. Check the length. If it's too long, pop the last word off the list and try again. If it's short enough, we're done. This isn't the fastest way, but it's good enough for our purposes.
+
+Here's the code to shorten the list before adding it to the thesaurus. Note the arithmetic to make sure our tweets aren't too long. We need space for the username we're replying to, the punctuation around it and the response itself.
+
+      while (true)
+      {
+        var synonyms = words.join(', ');
+        // 140 characters minus 15 character username minus
+        // leading @ in reply minus space after username
+        if (synonyms.length > (140 - 15 - 2))
+        {
+          words.pop();
+          continue;
+        }
+        else
+        {
+          break;
+        }
+      }
+      thesaurus[term] = synonyms;
+

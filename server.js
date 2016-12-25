@@ -220,6 +220,7 @@ app.post('/posts/:slug/edit', function(req, res) {
     {
       post.title = req.body.title;
       post.body = sanitize(req.body.body).xss();
+      post.embed = req.body.embed;
 
       postCollection.update({slug: slug}, post, {safe: true}, function(err, docs) {
         res.redirect('/');
@@ -281,7 +282,7 @@ app.post('/new', function(req, res) {
   }
   var post = _.pick(
     _.defaults(req.body, {'title': '', 'body': ''}), 
-    'title', 'body');
+    'title', 'body', 'embed');
   post.slug = slugify(post.title);
  
   // We allow HTML in the body (via the rich text editor), but we don't want 

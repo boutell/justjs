@@ -6,6 +6,9 @@
     </h3>
   <% } %>
   <h2><a href="/posts/<%- post.slug %>"><%= post.title %></a></h2>
+  <% if (post.embed && (!readMore)) { %>
+    <%= post.embed %>
+  <% } %>
   <div class="postBody">
     <%= post.body %>
   </div>
