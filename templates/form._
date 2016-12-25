@@ -9,7 +9,7 @@
 			</fieldset>
       <fieldset>
 				<label>Embed code</label>
-				<textarea name="embed"><%= post.embed %></textarea>
+				<textarea name="embed"><%= post.embed ? post.embed : '' %></textarea>
 			</fieldset>
 			<fieldset>
 				<label>Body</label>
