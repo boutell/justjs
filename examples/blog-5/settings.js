@@ -13,8 +13,9 @@ module.exports = {
     port: 3000
   },
   // You should use a secret of your own to authenticate session cookies
-  sessionSecret: 'CHANGEME',
+  sessionSecret: 'your_password',
   google: {
+    //returnURL: 'http://localhost:3000/auth/google/callback',
     returnURL: 'http://localhost:3000/auth/google/callback',
     realm: 'http://localhost:3000/'
   },
@@ -22,4 +23,5 @@ module.exports = {
   posters: '*@punkave.com'
   // Match just me
   // posters: 'tom@punkave.com'
+
 };

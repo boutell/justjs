@@ -1,25 +1,36 @@
 var _ = require('underscore');
 var express = require('express');
-var view;
+var bodyParser = require('body-parser');
 var passport = require('passport');
-// Allows us to check whether an email address matches a simple pattern with * wildcards
 var minimatch = require('minimatch');
+var cookieParser = require('cookie-parser');
+var session = require('express-session');
+var view;
 
+
+  
 module.exports = {
   init: function(context, callback) {
     // Create an Express app object to add routes to and add
     // it to the context
-    var app = context.app = express.createServer();
-
+    var app = context.app =  require("express")(); 
     // The express "body parser" gives us the parameters of a 
     // POST request is a convenient req.body object
-    app.use(express.bodyParser());
+    
+    
+    //app.use(bodyParser.urlencoded());
+    app.use(bodyParser.json());    
+    app.use(bodyParser.urlencoded({
+      extended: true
+    }));
+
+
 
     // Get the view module from the context
     view = context.view;
 
     // We need cookie parsing support for Passport
-    context.app.use(express.cookieParser());
+    context.app.use(cookieParser());
 
     // Bring in the connect-mongodb session handler
     var connectMongoDb = require('connect-mongodb');
@@ -27,8 +38,9 @@ module.exports = {
     // Create our session storage
     var mongoStore = new connectMongoDb({ db: context.mongoConnection });
 
+    
     // Our user sessions should be authenticated with a secret unique to this project
-    context.app.use(express.session({ secret: context.settings.sessionSecret, store: mongoStore }));
+    context.app.use(session({ secret: context.settings.sessionSecret, store: mongoStore, resave: true, saveUninitialized: true }));
 
     // Serve static files (such as CSS and js) in this folder
     app.use('/static', express.static(__dirname + '/static'));
@@ -38,6 +50,7 @@ module.exports = {
     // nice chrome on the login page
     configurePassport();
 
+
     // Deliver a list of posts when we see just '/'
     app.get('/', function(req, res) {
       context.db.posts.findAll(function(err, posts) {
@@ -46,8 +59,8 @@ module.exports = {
           notFound(res);
           return;
         }
-
-        page(req, res, 'index', {posts: posts});
+          res.send(view.page('index', {posts: posts}));
+   
       });
     });
 
@@ -59,49 +72,50 @@ module.exports = {
           notFound(res);
           return;
         }
-        page(req, res, 'post', {post: post});
-      });
+        res.send(view.page('post', {post: post}));      });
     });
 
     // Deliver a "new post" form when we see /new.
     // POST it right back to the same URL; the next route
     // below will answer 
     app.get('/new', function(req, res) {
-      if (!validPoster(req, res))
-      {
-        return;
-      }
-      newPost(req, res);
+      newPost(res);
     });
 
     // Save a new post when we see a POST request
     // for /new (note this is enough to distinguish it
     // from the route above)
     app.post('/new', function(req, res) {
-      if (!validPoster(req, res))
-      {
-        return;
-      }
+
+      //var post = _.pick(req.body, 'title', 'body');
+      var post_title = req.body;
+
+      console.log(post);
       var post = _.pick(req.body, 'title', 'body');
       context.db.posts.insert(post, function(err, post) {
+        //console.log("error");
+        //console.log(post);
         if (err)
         {
           // Probably a duplicate slug, ask the user to try again
           // with a more distinctive title. We'll fix this
           // automatically in our next installment
-          newPost(req, res, "Make sure your title is unique.");
+          newPost(res, "Make sure your title is unique.");
         }
         else
         {
+
+          //res.redirect('/posts/' + post.slug);
           res.redirect('/posts/' + post.slug);
         }
       });
     });
 
     // Send the "new post" page, with an error message if needed
-    function newPost(req, res, message)
+    function newPost(res, message)
     {
-      page(req, res, 'new', { 'message': message });
+      res.send(view.page('new', { 'message': message }));
+      
     }
 
     app.get('*', function(req, res) {
@@ -114,26 +128,14 @@ module.exports = {
 
     function notFound(res)
     {
-      res.send('<h1>Page not found.</h1>', 404);
-    }
-
-    // A convenient way to send a page as part of the response.
-    // Wraps view.page without forcing Express-specific code
-    // into that module
-    function page(req, res, template, data)
-    {
-      // Displaying the user's name or email address is a common requirement.
-      // Make sure data.slots.user exists - but do it without clobbering if
-      // someone has explicitly provided data.slots or data.slots.user already.
-      // Ditto for the session
-      _.defaults(data, { slots: {} });
-      _.defaults(data.slots, { user: req.user, session: req.session });
-      res.send(view.page(template, data));
+      
+      res.status(404).send('<h1>Page not found.</h1>');
     }
 
     // We didn't have to delegate to anything time-consuming, so
     // just invoke our callback now
     callback();
+
 
     // Set up user authentication
     function configurePassport()
@@ -214,6 +216,6 @@ module.exports = {
       }
       return true;
     }
+
   }
 };
-
